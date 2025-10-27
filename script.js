@@ -14,9 +14,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- DETAILED CHECKLISTS DEFINITION ---
     const CHECKLISTS = {
-        "Pre-Onboarding": { "Setup": { po_orientation: "Orientation Attended", po_persona: "Persona Assessed", po_goals: "Preliminary Goals Set" }},
-        "Month 1": { "Academic & Work Performance": { m1_academic_progress: "Discuss Academic Progress", m1_work_performance: "Review Trainee's Work Performance", m1_workplace_challenges: "Identify Workplace Challenges" }, "Goals & Support": { m1_review_goals: "Review Progress Towards Goals", m1_support_needs: "Review Support Needs", m1_skill_gaps: "Identify Skill Gaps (COC)" }},
-        "Month 3": { "Academic & Performance": { m3_track_attendance: "Track School Attendance", m3_assess_attitude: "Assess Attitude and Contribution", m3_identify_gaps: "Identify Gaps for Improvement", m3_discuss_strategies: "Discuss Strategies for Success" }, "Goals & Support": { m3_support_follow_up: "Follow-up on Support Status", m3_monitor_wellbeing: "Continue to Monitor Well-being" }},
+        "Pre-Onboarding": { "Setup": { po_orientation: "ITE Orientation Attended", po_persona: "Persona Assessed", po_goals: "Preliminary Goals Set for work and academics" }},
+        "Month 1": { "Academic & Work Performance": { m1_academic_progress: "Discuss Academic Progress", m1_work_performance: "Review Trainee's Work Performance", m1_workplace_challenges: "Identify Workplace Challenges" }, "Goals & Support": { m1_review_goals: "Review Progress Towards Goals", m1_support_needs: "Review Support Needs", m1_skill_gaps: "Identify Skill Gaps (COC – offer CoC to bridge the gap)" }},
+        "Month 3": { "Academic & Performance": { m3_track_attendance: "Track School Attendance", m3_assess_attitude: "Assess Attitude and Contribution", m3_identify_gaps: "Identify Gaps for Improvement at workplace and academics", m3_discuss_strategies: "Discuss Strategies for Success" }, "Goals & Support": { m3_support_follow_up: "Follow-up on Support Status", m3_monitor_wellbeing: "Continue to Monitor Well-being" }},
         "Month 6": { "Academic & Performance": { m6_eval_academic: "Evaluate Trainee's Academic Progress", m6_eval_overall: "Evaluate Overall Performance & Skills", m6_review_gaps: "Evaluate and Review Performance Gaps" }, "Goals & Support": { m6_review_strategies: "Review Effectiveness of Strategies", m6_monitor_wellbeing: "Continue to Monitor Well-being" }}
     };
 
