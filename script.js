@@ -15,9 +15,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- DETAILED CHECKLISTS DEFINITION ---
     const CHECKLISTS = {
         "Pre-Onboarding": { "Setup": { po_orientation: "ITE Orientation Attended", po_persona: "Persona Assessed", po_goals: "Preliminary Goals Set for work and academics" }},
-        "Month 1": { "Academic & Work Performance": { m1_academic_progress: "Discuss Academic Progress", m1_work_performance: "Review Trainee's Work Performance", m1_workplace_challenges: "Identify Workplace Challenges" }, "Goals & Support": { m1_review_goals: "Review Progress Towards Goals", m1_support_needs: "Review Support Needs", m1_skill_gaps: "Identify Skill Gaps (COC – offer CoC to bridge the gap)" }},
-        "Month 3": { "Academic & Performance": { m3_track_attendance: "Track School Attendance", m3_assess_attitude: "Assess Attitude and Contribution", m3_identify_gaps: "Identify Gaps for Improvement at workplace and academics", m3_discuss_strategies: "Discuss Strategies for Success" }, "Goals & Support": { m3_support_follow_up: "Follow-up on Support Status", m3_monitor_wellbeing: "Continue to Monitor Well-being" }},
-        "Month 6": { "Academic & Performance": { m6_eval_academic: "Evaluate Trainee's Academic Progress", m6_eval_overall: "Evaluate Overall Performance & Skills", m6_review_gaps: "Evaluate and Review Performance Gaps" }, "Goals & Support": { m6_review_strategies: "Review Effectiveness of Strategies", m6_monitor_wellbeing: "Continue to Monitor Well-being" }}
+        "Month 1": { "Academic & Work Performance": { m1_academic_progress: "Discuss Academic Progress", m1_work_performance: "Review Trainee's Work Performance", m1_workplace_challenges: "Identify Workplace Challenges" }, "Goals & Support": { m1_review_goals: "Review Progress Towards Goals", m1_support_needs: "Review Support Needs to be offered by College Services Divn", m1_skill_gaps: "Identify Skill Gaps (COC – offer CoC to bridge the gap)" }},
+        "Month 3": { "Academic & Performance": { m3_track_attendance: "Track School Attendance", m3_assess_attitude: "Assess Attitude and Contribution", m3_identify_gaps: "Identify Gaps for Improvement at workplace and academics", m3_discuss_strategies: "Discuss Strategies for Success" }, "Goals & Support": { m3_support_follow_up: "Follow-up on Support Status", m3_monitor_wellbeing: "Continue to Monitor Well-being, and offer support/assistance by College Services Divn, where needed" }},
+        "Month 6": { "Academic & Performance": { m6_eval_academic: "Evaluate Trainee's Academic Progress", m6_eval_overall: "Evaluate Overall Performance & Skills", m6_review_gaps: "Evaluate and Review Performance Gaps" }, "Goals & Support": { m6_review_strategies: "Review Effectiveness of Strategies", m6_monitor_wellbeing: "Continue to Monitor Well-being, and offer support/assistance by College Services Divn, where needed" }}
     };
 
     function calculateStatus(metrics) {
@@ -154,8 +154,14 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         charts.checklist = new Chart(document.getElementById('checklist-chart').getContext('2d'), {
             type: 'bar',
-            data: { labels: phaseOrder, datasets: [{ label: 'Completion %', data: checklistCompletionData, backgroundColor: checklistCompletionData.map(getBarColor) }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `${context.raw.toFixed(1)}% Complete` } } }, scales: { y: { beginAtZero: true, max: 100, ticks: { callback: (value) => value + '%' } } } }
+            data: { 
+                labels: phaseOrder, 
+                datasets: [
+                    { label: 'Completion %', data: checklistCompletionData, backgroundColor: checklistCompletionData.map(getBarColor) },
+                    { label: 'Baseline (70%)', data: Array(phaseOrder.length).fill(70), type: 'line', borderColor: '#666', borderWidth: 2, borderDash: [5, 5], pointRadius: 0, fill: false }
+                ] 
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true }, tooltip: { callbacks: { label: (context) => context.dataset.label.includes('Baseline') ? 'Baseline: 70%' : `${context.raw.toFixed(1)}% Complete` } } }, scales: { y: { beginAtZero: true, max: 100, ticks: { callback: (value) => value + '%' } } } }
         });
 
         // Competency Progress by Phase Chart
@@ -168,8 +174,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         charts.competencyProgress = new Chart(document.getElementById('competency-progress-chart').getContext('2d'), {
             type: 'line',
-            data: { labels: competencyPhaseLabels, datasets: [{ label: 'Average Competency', data: competencyProgressData, borderColor: 'var(--ite-blue)', backgroundColor: 'rgba(21, 101, 192, 0.1)', fill: true, tension: 0.1 }] },
-            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100, ticks: { callback: (value) => value + '%' } } }, plugins: { legend: { display: false } } }
+            data: { 
+                labels: competencyPhaseLabels, 
+                datasets: [
+                    { label: 'Average Competency', data: competencyProgressData, borderColor: 'var(--ite-blue)', backgroundColor: 'rgba(21, 101, 192, 0.1)', fill: true, tension: 0.1 },
+                    { label: 'Baseline (70%)', data: Array(competencyPhaseLabels.length).fill(70), type: 'line', borderColor: '#666', borderWidth: 2, borderDash: [5, 5], pointRadius: 0, fill: false }
+                ] 
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100, ticks: { callback: (value) => value + '%' } } }, plugins: { legend: { display: true }, tooltip: { callbacks: { label: (context) => context.dataset.label.includes('Baseline') ? 'Baseline: 70%' : `${context.raw.toFixed(1)}%` } } } }
         });
 
         // Attendance Rate by Phase Chart
@@ -184,9 +196,12 @@ document.addEventListener('DOMContentLoaded', () => {
             type: 'line',
             data: {
                 labels: attendancePhaseLabels,
-                datasets: [{ label: 'Average Attendance', data: attendanceProgressData, borderColor: 'var(--success)', backgroundColor: 'rgba(40, 167, 69, 0.1)', fill: true, tension: 0.1 }]
+                datasets: [
+                    { label: 'Average Attendance', data: attendanceProgressData, borderColor: 'var(--success)', backgroundColor: 'rgba(40, 167, 69, 0.1)', fill: true, tension: 0.1 },
+                    { label: 'Baseline (85%)', data: Array(attendancePhaseLabels.length).fill(85), type: 'line', borderColor: '#666', borderWidth: 2, borderDash: [5, 5], pointRadius: 0, fill: false }
+                ]
             },
-            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100, ticks: { callback: (value) => value + '%' } } }, plugins: { legend: { display: false } } }
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100, ticks: { callback: (value) => value + '%' } } }, plugins: { legend: { display: true }, tooltip: { callbacks: { label: (context) => context.dataset.label.includes('Baseline') ? 'Baseline: 85%' : `${context.raw.toFixed(1)}%` } } } }
         });
 
         // Engagement Score by Phase Chart
@@ -201,9 +216,12 @@ document.addEventListener('DOMContentLoaded', () => {
             type: 'line',
             data: {
                 labels: engagementPhaseLabels,
-                datasets: [{ label: 'Average Engagement', data: engagementProgressData, borderColor: 'var(--warning)', backgroundColor: 'rgba(255, 193, 7, 0.1)', fill: true, tension: 0.1 }]
+                datasets: [
+                    { label: 'Average Engagement', data: engagementProgressData, borderColor: 'var(--warning)', backgroundColor: 'rgba(255, 193, 7, 0.1)', fill: true, tension: 0.1 },
+                    { label: 'Baseline (3.5)', data: Array(engagementPhaseLabels.length).fill(3.5), type: 'line', borderColor: '#666', borderWidth: 2, borderDash: [5, 5], pointRadius: 0, fill: false }
+                ]
             },
-            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 5 } }, plugins: { legend: { display: false } } }
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 5 } }, plugins: { legend: { display: true }, tooltip: { callbacks: { label: (context) => context.dataset.label.includes('Baseline') ? 'Baseline: 3.5' : `${context.raw.toFixed(1)}` } } } }
         });
         
         // Phase Distribution Chart
@@ -310,7 +328,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (phase !== 'Pre-Onboarding' && data.snapshot?.metrics) {
                     const canvas = document.getElementById(`timeline-chart-${index}`);
                     if (!canvas) return;
-                    charts[`timeline-${index}`] = new Chart(canvas.getContext('2d'), { type: 'bar', data: { labels: ['Competency', 'Attendance', 'Engagement'], datasets: [{ data: [ data.snapshot.metrics.competency, data.snapshot.metrics.attendance, (data.snapshot.metrics.engagement || 0) * 20 ], backgroundColor: ['var(--ite-blue)', 'var(--success)', 'var(--warning)'] }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { if (context.label === 'Engagement') { return ` ${(context.raw / 20).toFixed(1)} / 5.0`; } return ` ${context.raw}%`; } } } }, scales: { x: { max: 100, beginAtZero: true, ticks: { callback: (value) => value + '%' } } } } });
+                    charts[`timeline-${index}`] = new Chart(canvas.getContext('2d'), { type: 'bar', data: { labels: ['Competency', 'Attendance', 'Engagement'], datasets: [{ data: [ data.snapshot.metrics.competency, data.snapshot.metrics.attendance, (data.snapshot.metrics.engagement || 0) * 20 ], backgroundColor: ['#8e44ad', '#e74c3c', '#2ecc71'] }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { if (context.label === 'Engagement') { return ` ${(context.raw / 20).toFixed(1)} / 5.0`; } return ` ${context.raw}%`; } } } }, scales: { x: { max: 100, beginAtZero: true, ticks: { callback: (value) => value + '%' } } } } });
                 }
             });
         }, 0);
