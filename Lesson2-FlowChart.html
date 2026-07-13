@@ -1,0 +1,1723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlowChart Lab — Visual Programming Foundations</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0f1c;
+    --bg-2: #0f1626;
+    --bg-3: #131c30;
+    --card: #161f36;
+    --card-2: #1a2540;
+    --border: #243352;
+    --border-2: #2d4068;
+    --fg: #eaf1fb;
+    --fg-dim: #b8c5dc;
+    --muted: #7689a8;
+    --accent: #ff8a3d;
+    --accent-2: #ffb547;
+    --accent-glow: rgba(255, 138, 61, 0.4);
+    --cyan: #4cc9f0;
+    --cyan-glow: rgba(76, 201, 240, 0.3);
+    --green: #4ade80;
+    --red: #f87171;
+    --yellow: #fbbf24;
+    --grid: rgba(76, 201, 240, 0.05);
+    --grid-2: rgba(76, 201, 240, 0.09);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    margin: 0;
+    overflow-x: hidden;
+    line-height: 1.5;
+  }
+  .font-display { font-family: 'Space Grotesk', sans-serif; letter-spacing: -0.02em; }
+  .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+  .grid-bg {
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  .grid-bg-fine {
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px), linear-gradient(var(--grid-2) 1px, transparent 1px), linear-gradient(90deg, var(--grid-2) 1px, transparent 1px);
+    background-size: 20px 20px, 20px 20px, 100px 100px, 100px 100px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #0a0f1c; font-weight: 700; padding: 14px 26px; border-radius: 8px;
+    border: none; cursor: pointer; transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 8px; font-family: 'DM Sans', sans-serif;
+    box-shadow: 0 4px 20px var(--accent-glow);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px var(--accent-glow); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .btn-ghost {
+    background: transparent; color: var(--fg); border: 1px solid var(--border-2);
+    padding: 12px 22px; border-radius: 8px; cursor: pointer; transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif; font-weight: 500;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-ghost:hover { background: var(--card); border-color: var(--accent); color: var(--accent-2); }
+  .btn-ghost:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    transition: all 0.3s;
+  }
+
+  .section-tag {
+    display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px;
+    background: rgba(255, 138, 61, 0.1); border: 1px solid rgba(255, 138, 61, 0.3);
+    color: var(--accent-2); border-radius: 100px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600;
+    letter-spacing: 0.05em; text-transform: uppercase;
+  }
+  .section-tag::before {
+    content: ''; width: 6px; height: 6px; background: var(--accent);
+    border-radius: 50%; box-shadow: 0 0 8px var(--accent);
+  }
+
+  .symbol-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 24px; cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden;
+  }
+  .symbol-card::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, transparent 50%, rgba(255,138,61,0.06));
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .symbol-card:hover {
+    border-color: var(--accent); transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  }
+  .symbol-card:hover::before { opacity: 1; }
+  .symbol-card.explored { border-color: var(--border-2); }
+  .symbol-card.explored::after {
+    content: '✓'; position: absolute; top: 12px; right: 14px;
+    width: 22px; height: 22px; border-radius: 50%; background: var(--green);
+    color: var(--bg); display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { filter: drop-shadow(0 0 6px rgba(255,138,61,0.6)); }
+    50% { filter: drop-shadow(0 0 18px rgba(255,138,61,1)); }
+  }
+  .node-active { animation: pulse-glow 1.5s ease-in-out infinite; }
+
+  @keyframes drawIn {
+    from { opacity: 0; transform: translateY(-12px) scale(0.9); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .fc-anim-in { animation: drawIn 0.4s ease-out both; }
+
+  .code-block {
+    background: #060a14; border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px 18px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px;
+    line-height: 1.85; color: #eaf1fb; overflow-x: auto;
+  }
+  .code-line {
+    display: block; padding: 1px 8px 1px 28px; position: relative;
+    border-radius: 3px; transition: background 0.2s; min-height: 22px;
+  }
+  .code-line::before {
+    content: attr(data-line); position: absolute; left: 0; top: 1px;
+    color: var(--muted); font-size: 11px; width: 22px; text-align: right;
+  }
+  .code-line.active {
+    background: rgba(255, 138, 61, 0.18); border-left: 2px solid var(--accent);
+    padding-left: 26px;
+  }
+
+  .var-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 9px 14px; border-bottom: 1px dashed var(--border);
+    font-family: 'JetBrains Mono', monospace; font-size: 12.5px;
+  }
+  .var-row:last-child { border-bottom: none; }
+  .var-name { color: var(--cyan); }
+  .var-value { color: var(--accent-2); font-weight: 600; }
+  .var-row.flash { animation: flash-update 0.8s ease; }
+  @keyframes flash-update {
+    0% { background: rgba(255, 138, 61, 0.35); }
+    100% { background: transparent; }
+  }
+
+  .palette-item {
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; gap: 10px; user-select: none;
+  }
+  .palette-item:hover:not(.used):not(.locked) {
+    border-color: var(--accent); transform: translateX(3px); background: var(--card-2);
+  }
+  .palette-item.used {
+    opacity: 0.3; cursor: not-allowed; pointer-events: none;
+  }
+  .palette-item.hint {
+    border-color: var(--yellow); box-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+    animation: hint-pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes hint-pulse {
+    0%, 100% { box-shadow: 0 0 12px rgba(251, 191, 36, 0.3); }
+    50% { box-shadow: 0 0 22px rgba(251, 191, 36, 0.6); }
+  }
+
+  .quiz-option {
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 18px; cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .quiz-option:hover:not(.disabled) {
+    border-color: var(--cyan); background: var(--card-2);
+  }
+  .quiz-option.correct { border-color: var(--green); background: rgba(74, 222, 128, 0.1); }
+  .quiz-option.incorrect { border-color: var(--red); background: rgba(248, 113, 113, 0.1); }
+  .quiz-option.disabled { pointer-events: none; }
+  .quiz-option .opt-letter {
+    width: 28px; height: 28px; border-radius: 6px; background: var(--bg-3);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700;
+    color: var(--fg-dim); flex-shrink: 0;
+  }
+  .quiz-option.correct .opt-letter { background: var(--green); color: var(--bg); }
+  .quiz-option.incorrect .opt-letter { background: var(--red); color: var(--bg); }
+
+  .fc-connector {
+    width: 2px; height: 22px; background: var(--border-2); margin: 0 auto; position: relative;
+  }
+  .fc-connector::after {
+    content: ''; position: absolute; bottom: -1px; left: 50%; transform: translateX(-50%);
+    width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent;
+    border-top: 7px solid var(--border-2);
+  }
+  .fc-connector.active { background: var(--accent); }
+  .fc-connector.active::after { border-top-color: var(--accent); }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.8s, transform 0.8s; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  .progress-bar { height: 6px; background: var(--bg-3); border-radius: 3px; overflow: hidden; }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    transition: width 0.6s ease; box-shadow: 0 0 10px var(--accent-glow);
+  }
+
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--card); border: 1px solid var(--border-2); border-left: 4px solid var(--accent);
+    padding: 14px 20px; border-radius: 8px; color: var(--fg); z-index: 1000;
+    transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5); max-width: 380px;
+    display: flex; align-items: flex-start; gap: 12px;
+  }
+  .toast.show { transform: translateX(0); }
+  .toast.success { border-left-color: var(--green); }
+  .toast.error { border-left-color: var(--red); }
+  .toast.info { border-left-color: var(--cyan); }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 5px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+  ::selection { background: var(--accent); color: var(--bg); }
+
+  .nav-link {
+    position: relative; padding: 8px 4px; color: var(--fg-dim);
+    transition: color 0.2s; font-size: 14px; font-weight: 500;
+  }
+  .nav-link:hover { color: var(--fg); }
+  .nav-link::after {
+    content: ''; position: absolute; bottom: 0; left: 0; width: 0; height: 2px;
+    background: var(--accent); transition: width 0.2s;
+  }
+  .nav-link:hover::after { width: 100%; }
+
+  .tab-btn {
+    padding: 10px 18px; background: transparent; border: 1px solid var(--border);
+    color: var(--fg-dim); cursor: pointer; border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12.5px; font-weight: 500;
+    transition: all 0.2s;
+  }
+  .tab-btn.active {
+    background: var(--accent); color: var(--bg); border-color: var(--accent);
+    box-shadow: 0 4px 16px var(--accent-glow);
+  }
+  .tab-btn:hover:not(.active) { border-color: var(--accent); color: var(--accent-2); }
+
+  .build-slot {
+    background: rgba(255,255,255,0.02); border: 1px dashed var(--border);
+    border-radius: 8px; padding: 8px; min-height: 70px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .build-slot.empty::before {
+    content: 'Click steps below to build'; color: var(--muted);
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  }
+
+  .loop-arrow {
+    position: absolute; left: -50px; top: 0; bottom: 0; width: 50px;
+    pointer-events: none;
+  }
+
+  @keyframes confetti-fall {
+    0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(400px) rotate(720deg); opacity: 0; }
+  }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+    border-radius: 100px; font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 600;
+  }
+  .badge-success { background: rgba(74, 222, 128, 0.12); color: var(--green); border: 1px solid rgba(74, 222, 128, 0.3); }
+  .badge-warn { background: rgba(251, 191, 36, 0.12); color: var(--yellow); border: 1px solid rgba(251, 191, 36, 0.3); }
+  .badge-info { background: rgba(76, 201, 240, 0.12); color: var(--cyan); border: 1px solid rgba(76, 201, 240, 0.3); }
+
+  .scroll-shadow {
+    background: linear-gradient(180deg, var(--bg) 0%, transparent 100%);
+    height: 20px; position: relative; z-index: 2;
+  }
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="fixed top-0 left-0 right-0 z-50 backdrop-blur-lg bg-[rgba(10,15,28,0.82)] border-b border-[var(--border)]">
+  <div class="max-w-7xl mx-auto px-6 py-3.5 flex items-center justify-between">
+    <a href="#hero" class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] flex items-center justify-center shadow-lg shadow-[var(--accent-glow)]">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0a0f1c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="6" height="6" rx="3"/>
+          <rect x="15" y="15" width="6" height="6" rx="3"/>
+          <path d="M9 6h6a3 3 0 0 1 3 3v6"/>
+        </svg>
+      </div>
+      <div>
+        <div class="font-display font-bold text-lg leading-none">FlowChart Lab</div>
+        <div class="text-[10px] font-mono text-[var(--muted)] mt-0.5">ITE · EIC · TOPIC 2</div>
+      </div>
+    </a>
+    <div class="hidden md:flex items-center gap-6">
+      <a href="#symbols" class="nav-link">Symbols</a>
+      <a href="#demo" class="nav-link">Live Demo</a>
+      <a href="#examples" class="nav-link">Examples</a>
+      <a href="#practice" class="nav-link">Practice</a>
+      <a href="#quiz" class="nav-link">Quiz</a>
+    </div>
+    <div class="flex items-center gap-2">
+      <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--card)] border border-[var(--border)]">
+        <div class="w-2 h-2 rounded-full bg-[var(--green)] animate-pulse"></div>
+        <span class="font-mono text-xs text-[var(--muted)]">Progress</span>
+        <span class="font-mono text-xs font-bold text-[var(--accent-2)]" id="globalProgress">0%</span>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section id="hero" class="relative min-h-screen flex items-center pt-24 pb-12 overflow-hidden grid-bg">
+  <div class="absolute top-20 left-10 w-96 h-96 rounded-full bg-[var(--accent)] opacity-10 blur-3xl"></div>
+  <div class="absolute bottom-20 right-10 w-96 h-96 rounded-full bg-[var(--cyan)] opacity-10 blur-3xl"></div>
+
+  <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center relative z-10">
+    <div>
+      <div class="section-tag mb-6">Topic 2 · Visual Programming</div>
+      <h1 class="font-display font-bold text-5xl md:text-7xl leading-[0.95] mb-6">
+        Think in <span class="text-[var(--accent)]">flow</span><br>before you<br><span class="text-[var(--cyan)]">code</span>.
+      </h1>
+      <p class="text-lg text-[var(--fg-dim)] mb-8 max-w-xl">
+        Master the visual language of algorithms. Design, trace, and debug programs with flowcharts — then translate them into running Python. Six symbols. Two tasks. One clear mind.
+      </p>
+      <div class="flex flex-wrap gap-3 mb-10">
+        <a href="#symbols" class="btn-primary">
+          Start Learning
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <a href="#practice" class="btn-ghost">Jump to Practice</a>
+      </div>
+
+      <div class="grid grid-cols-3 gap-4 max-w-md">
+        <div>
+          <div class="font-display font-bold text-3xl text-[var(--accent-2)]">6</div>
+          <div class="text-xs text-[var(--muted)] uppercase tracking-wider font-mono">Symbols</div>
+        </div>
+        <div>
+          <div class="font-display font-bold text-3xl text-[var(--cyan)]">2</div>
+          <div class="text-xs text-[var(--muted)] uppercase tracking-wider font-mono">Tasks</div>
+        </div>
+        <div>
+          <div class="font-display font-bold text-3xl text-[var(--green)]">5</div>
+          <div class="text-xs text-[var(--muted)] uppercase tracking-wider font-mono">Quizzes</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hero visual: animated flowchart -->
+    <div class="relative">
+      <div class="card p-6 md:p-8 backdrop-blur-sm bg-[rgba(22,31,54,0.6)] glow-accent" style="box-shadow: 0 0 60px rgba(255,138,61,0.15);">
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full bg-[var(--red)]"></div>
+            <div class="w-3 h-3 rounded-full bg-[var(--yellow)]"></div>
+            <div class="w-3 h-3 rounded-full bg-[var(--green)]"></div>
+          </div>
+          <div class="font-mono text-xs text-[var(--muted)]">average.flow</div>
+        </div>
+        <div id="heroFlowchart" class="flex flex-col items-center gap-0"></div>
+        <div class="mt-6 pt-4 border-t border-[var(--border)] flex items-center justify-between text-xs font-mono">
+          <span class="text-[var(--muted)]">tracing...</span>
+          <span id="heroTrace" class="text-[var(--accent-2)]">idle</span>
+        </div>
+      </div>
+      <div class="absolute -bottom-4 -right-4 card px-4 py-3 bg-[var(--bg-3)] flex items-center gap-3">
+        <div class="w-2 h-2 rounded-full bg-[var(--green)] animate-pulse"></div>
+        <span class="font-mono text-xs text-[var(--fg-dim)]">Live execution trace</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-60">
+    <span class="font-mono text-[10px] uppercase tracking-widest text-[var(--muted)]">Scroll</span>
+    <div class="w-px h-12 bg-gradient-to-b from-[var(--accent)] to-transparent"></div>
+  </div>
+</section>
+
+<!-- Objectives -->
+<section class="py-16 border-t border-[var(--border)]">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-10">
+      <div class="section-tag mb-4">Learning Outcomes</div>
+      <h2 class="font-display font-bold text-3xl md:text-4xl">What you will master</h2>
+    </div>
+    <div class="grid md:grid-cols-3 gap-5">
+      <div class="card p-6 reveal">
+        <div class="w-10 h-10 rounded-lg bg-[var(--bg-3)] flex items-center justify-center mb-4 border border-[var(--border)]">
+          <span class="font-mono text-[var(--accent-2)] font-bold">01</span>
+        </div>
+        <h3 class="font-display font-semibold text-lg mb-2">Represent algorithms visually</h3>
+        <p class="text-sm text-[var(--fg-dim)]">Use flowcharts to map out program flow and algorithmic logic before writing a single line of code.</p>
+      </div>
+      <div class="card p-6 reveal">
+        <div class="w-10 h-10 rounded-lg bg-[var(--bg-3)] flex items-center justify-center mb-4 border border-[var(--border)]">
+          <span class="font-mono text-[var(--accent-2)] font-bold">02</span>
+        </div>
+        <h3 class="font-display font-semibold text-lg mb-2">Detect bugs early</h3>
+        <p class="text-sm text-[var(--fg-dim)]">Understand program algorithms clearly and spot defects that could cause malfunction — before they reach production.</p>
+      </div>
+      <div class="card p-6 reveal">
+        <div class="w-10 h-10 rounded-lg bg-[var(--bg-3)] flex items-center justify-center mb-4 border border-[var(--border)]">
+          <span class="font-mono text-[var(--accent-2)] font-bold">03</span>
+        </div>
+        <h3 class="font-display font-semibold text-lg mb-2">Construct from algorithm</h3>
+        <p class="text-sm text-[var(--fg-dim)]">Translate written algorithms into proper flowchart structures using the six standard symbols.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Symbols Library -->
+<section id="symbols" class="py-20 border-t border-[var(--border)] grid-bg-fine">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-10">
+      <div class="section-tag mb-4">01 · The Building Blocks</div>
+      <h2 class="font-display font-bold text-4xl md:text-5xl mb-4">Six symbols. <span class="text-[var(--accent)]">Infinite algorithms.</span></h2>
+      <p class="text-[var(--fg-dim)] max-w-2xl">Click any symbol to explore its purpose, see a Python equivalent, and learn when to use it. Track your exploration progress above.</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8" id="symbolGrid"></div>
+
+    <!-- Detail panel -->
+    <div id="symbolDetail" class="card p-8 hidden">
+      <div class="grid lg:grid-cols-5 gap-8">
+        <div class="lg:col-span-2">
+          <div class="flex items-center justify-center h-48 mb-4" id="detailVisual"></div>
+          <div class="text-center">
+            <div class="font-mono text-xs text-[var(--muted)] uppercase tracking-wider mb-1">Symbol</div>
+            <div class="font-display font-bold text-2xl" id="detailName"></div>
+          </div>
+        </div>
+        <div class="lg:col-span-3 space-y-5">
+          <div>
+            <div class="font-mono text-xs text-[var(--accent-2)] uppercase tracking-wider mb-2">Purpose</div>
+            <p class="text-[var(--fg-dim)]" id="detailPurpose"></p>
+          </div>
+          <div>
+            <div class="font-mono text-xs text-[var(--accent-2)] uppercase tracking-wider mb-2">When to use</div>
+            <p class="text-[var(--fg-dim)]" id="detailUse"></p>
+          </div>
+          <div>
+            <div class="font-mono text-xs text-[var(--accent-2)] uppercase tracking-wider mb-2">Python equivalent</div>
+            <pre class="code-block" id="detailPy"></pre>
+          </div>
+          <button class="btn-ghost text-sm" onclick="closeSymbolDetail()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+            Back to symbols
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Live Demo -->
+<section id="demo" class="py-20 border-t border-[var(--border)]">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-10">
+      <div class="section-tag mb-4">02 · Watch It Run</div>
+      <h2 class="font-display font-bold text-4xl md:text-5xl mb-4">Trace an algorithm <span class="text-[var(--cyan)]">step by step</span></h2>
+      <p class="text-[var(--fg-dim)] max-w-2xl">Press play to watch the flowchart execute. Variables update in real time and the matching Python line lights up. This is how flowcharts become code.</p>
+    </div>
+
+    <div class="card p-6 md:p-8">
+      <div class="grid lg:grid-cols-12 gap-6">
+        <!-- Flowchart -->
+        <div class="lg:col-span-5">
+          <div class="flex items-center justify-between mb-4">
+            <div class="font-mono text-xs text-[var(--muted)] uppercase tracking-wider">Algorithm</div>
+            <div class="badge badge-info">Step <span id="demoStepNum">0</span> / <span id="demoStepTotal">6</span></div>
+          </div>
+          <div id="demoFlowchart" class="flex flex-col items-center min-h-[500px]"></div>
+        </div>
+
+        <!-- State panel -->
+        <div class="lg:col-span-4 space-y-4">
+          <div>
+            <div class="font-mono text-xs text-[var(--muted)] uppercase tracking-wider mb-2">Variables</div>
+            <div class="card bg-[var(--bg-2)] p-0 overflow-hidden" id="demoVars">
+              <div class="var-row text-[var(--muted)] italic">No variables yet</div>
+            </div>
+          </div>
+          <div>
+            <div class="font-mono text-xs text-[var(--muted)] uppercase tracking-wider mb-2">What's happening</div>
+            <div class="card bg-[var(--bg-2)] p-4 text-sm text-[var(--fg-dim)] min-h-[80px]" id="demoDesc">
+              Press <span class="font-mono text-[var(--accent-2)]">Run</span> to start the trace.
+            </div>
+          </div>
+        </div>
+
+        <!-- Code view -->
+        <div class="lg:col-span-3">
+          <div class="font-mono text-xs text-[var(--muted)] uppercase tracking-wider mb-2">Python code</div>
+          <pre class="code-block" id="demoCode"></pre>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="mt-6 pt-6 border-t border-[var(--border)] flex flex-wrap items-center gap-3">
+        <button class="btn-primary" id="demoRunBtn" onclick="demoRun()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          Run
+        </button>
+        <button class="btn-ghost" id="demoStepBtn" onclick="demoStep()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          Step
+        </button>
+        <button class="btn-ghost" onclick="demoReset()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+          Reset
+        </button>
+        <div class="flex items-center gap-3 ml-auto">
+          <span class="font-mono text-xs text-[var(--muted)]">Speed</span>
+          <input type="range" id="demoSpeed" min="400" max="2500" value="1200" step="100" class="w-32 accent-[var(--accent)]">
+          <span class="font-mono text-xs text-[var(--accent-2)]" id="demoSpeedLabel">1.2s</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Examples -->
+<section id="examples" class="py-20 border-t border-[var(--border)] grid-bg">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-10">
+      <div class="section-tag mb-4">03 · Patterns</div>
+      <h2 class="font-display font-bold text-4xl md:text-5xl mb-4">Two patterns. <span class="text-[var(--accent)]">Most programs.</span></h2>
+      <p class="text-[var(--fg-dim)] max-w-2xl">Almost every algorithm falls into one of these two shapes: a straight sequence, or a sequence with a decision that creates a branch or loop.</p>
+    </div>
+
+    <div class="flex flex-wrap gap-3 mb-8">
+      <button class="tab-btn active" onclick="switchExample('seq')">Sequence — no decision</button>
+      <button class="tab-btn" onclick="switchExample('loop')">Decision + Loop</button>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-6">
+      <div class="card p-6 md:p-8">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <div class="font-mono text-xs text-[var(--muted)] uppercase tracking-wider mb-1" id="exampleLabel">Example A</div>
+            <div class="font-display font-semibold text-lg" id="exampleTitle">Calculate the area of a rectangle</div>
+          </div>
+          <div class="badge badge-info" id="exampleBadge">Linear</div>
+        </div>
+        <div id="exampleFlowchart" class="flex flex-col items-center min-h-[400px]"></div>
+      </div>
+
+      <div class="card p-6 md:p-8 bg-[var(--bg-2)]">
+        <div class="font-mono text-xs text-[var(--accent-2)] uppercase tracking-wider mb-3">Algorithm in plain English</div>
+        <ol class="space-y-3 text-sm text-[var(--fg-dim)]" id="exampleSteps"></ol>
+        <div class="mt-6 pt-6 border-t border-[var(--border)]">
+          <div class="font-mono text-xs text-[var(--accent-2)] uppercase tracking-wider mb-3">Key insight</div>
+          <p class="text-sm text-[var(--fg-dim)]" id="exampleInsight"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Practice -->
+<section id="practice" class="py-20 border-t border-[var(--border)]">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-10">
+      <div class="section-tag mb-4">04 · Build It Yourself</div>
+      <h2 class="font-display font-bold text-4xl md:text-5xl mb-4">Now <span class="text-[var(--accent)]">you construct</span> the flowchart</h2>
+      <p class="text-[var(--fg-dim)] max-w-2xl">Read the task. Then click the shuffled steps in the correct order to build the flowchart. Get instant feedback. Use hints if you get stuck.</p>
+    </div>
+
+    <div class="flex flex-wrap gap-3 mb-8">
+      <button class="tab-btn active" data-task="1" onclick="switchTask(1)">Task 1 · Sum Three Numbers</button>
+      <button class="tab-btn" data-task="2" onclick="switchTask(2)">Task 2 · Sum N Numbers (Loop)</button>
+    </div>
+
+    <div class="card p-6 md:p-8">
+      <!-- Task description -->
+      <div class="mb-6 pb-6 border-b border-[var(--border)]">
+        <div class="flex items-start gap-4">
+          <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] flex items-center justify-center flex-shrink-0">
+            <span class="font-mono font-bold text-[var(--bg)]" id="taskNum">1</span>
+          </div>
+          <div>
+            <div class="font-mono text-xs text-[var(--accent-2)] uppercase tracking-wider mb-1">Problem statement</div>
+            <p class="text-[var(--fg)]" id="taskDescription"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-8">
+        <!-- Build area -->
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <div class="font-mono text-xs text-[var(--muted)] uppercase tracking-wider">Your flowchart</div>
+            <div class="flex gap-2">
+              <div class="badge badge-info"><span id="placedCount">0</span> / <span id="totalCount">5</span> placed</div>
+            </div>
+          </div>
+          <div class="relative">
+            <div id="buildArea" class="flex flex-col items-center min-h-[400px] py-4"></div>
+          </div>
+
+          <div class="mt-6 flex flex-wrap gap-2">
+            <button class="btn-ghost text-sm" onclick="undoPlacement()" id="undoBtn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+              Undo
+            </button>
+            <button class="btn-ghost text-sm" onclick="resetBuild()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/></svg>
+              Clear
+            </button>
+            <button class="btn-ghost text-sm" onclick="showHint()" id="hintBtn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2v1.3h6V16.7c0-.8.4-1.5 1-2A7 7 0 0 0 12 2z"/></svg>
+              Hint
+            </button>
+            <button class="btn-primary text-sm ml-auto" onclick="checkSolution()" id="checkBtn" disabled>
+              Check Solution
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+            </button>
+          </div>
+
+          <div id="feedbackArea" class="mt-4 hidden"></div>
+        </div>
+
+        <!-- Palette -->
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <div class="font-mono text-xs text-[var(--muted)] uppercase tracking-wider">Available steps</div>
+            <div class="font-mono text-xs text-[var(--muted)]">Click in correct order</div>
+          </div>
+          <div id="paletteArea" class="space-y-2.5"></div>
+
+          <div class="mt-6 p-4 rounded-lg bg-[var(--bg-2)] border border-[var(--border)]">
+            <div class="flex items-start gap-3">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2" class="flex-shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+              <div class="text-xs text-[var(--fg-dim)] leading-relaxed">
+                <strong class="text-[var(--cyan)]">Tip:</strong> Start with <span class="font-mono text-[var(--accent-2)]">Start</span>, end with <span class="font-mono text-[var(--accent-2)]">End</span>. Inputs use the parallelogram, calculations use the rectangle, and questions use the diamond.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Quiz -->
+<section id="quiz" class="py-20 border-t border-[var(--border)] grid-bg-fine">
+  <div class="max-w-4xl mx-auto px-6">
+    <div class="mb-10 text-center">
+      <div class="section-tag mb-4 mx-auto">05 · Check Yourself</div>
+      <h2 class="font-display font-bold text-4xl md:text-5xl mb-4">Quick <span class="text-[var(--accent)]">knowledge check</span></h2>
+      <p class="text-[var(--fg-dim)] max-w-xl mx-auto">Five questions to lock in what you've learned. Get instant feedback with explanations.</p>
+    </div>
+
+    <div class="card p-6 md:p-10">
+      <!-- Progress -->
+      <div class="flex items-center gap-4 mb-8">
+        <div class="font-mono text-xs text-[var(--muted)]">Question <span id="qNum" class="text-[var(--accent-2)] font-bold">1</span> of <span id="qTotal">5</span></div>
+        <div class="flex-1 progress-bar"><div class="progress-fill" id="quizProgress" style="width: 20%"></div></div>
+        <div class="font-mono text-xs text-[var(--muted)]">Score: <span id="qScore" class="text-[var(--green)] font-bold">0</span></div>
+      </div>
+
+      <!-- Question -->
+      <div id="quizContainer"></div>
+
+      <!-- Result -->
+      <div id="quizResult" class="hidden text-center py-8"></div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="py-12 border-t border-[var(--border)]">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div>
+        <div class="font-display font-bold text-lg mb-1">FlowChart Lab</div>
+        <div class="text-sm text-[var(--muted)]">ITE College West · School of Electronics & Info-Comm Technology · Topic 2</div>
+      </div>
+      <div class="flex items-center gap-6 text-sm">
+        <div class="flex items-center gap-2">
+          <div class="w-2 h-2 rounded-full bg-[var(--green)] animate-pulse"></div>
+          <span class="text-[var(--fg-dim)]">Interactive lesson ready</span>
+        </div>
+        <div class="font-mono text-xs text-[var(--muted)]">v1.0 · Python Basic</div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<div id="toast" class="toast">
+  <div id="toastIcon"></div>
+  <div>
+    <div class="font-semibold text-sm mb-0.5" id="toastTitle"></div>
+    <div class="text-xs text-[var(--fg-dim)]" id="toastMsg"></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   DATA
+   ============================================================ */
+const SYMBOLS = [
+  {
+    id: 'terminator', name: 'Start / End', shape: 'terminator',
+    short: 'Marks where the algorithm begins and terminates.',
+    purpose: 'Every flowchart must have exactly one Start and at least one End. The terminator tells the reader "this is where execution enters" and "this is where it leaves".',
+    use: 'Use at the very top (Start) and bottom (End) of every flowchart. Never in the middle of the flow.',
+    py: '# Python runs top-to-bottom automatically.\n# Start = first line of the script.\n# End = last line or sys.exit().\n\nprint("Program started")\n# ... your code ...\nprint("Program ended")',
+    example: 'Start'
+  },
+  {
+    id: 'io', name: 'Input / Output', shape: 'io',
+    short: 'Represents data going in (user input) or coming out (display).',
+    purpose: 'The parallelogram signals interaction with the outside world — reading from the keyboard, writing to the screen, a file, or a network.',
+    use: 'Use for input() and print() statements, or any data moving across the program boundary.',
+    py: '# Input\nname = input("Enter name: ")\nage = int(input("Enter age: "))\n\n# Output\nprint("Hello,", name)\nprint(f"You are {age} years old")',
+    example: 'INPUT num1\nOUTPUT "Total =", total'
+  },
+  {
+    id: 'process', name: 'Processing', shape: 'process',
+    short: 'Computes, assigns, or transforms data inside the program.',
+    purpose: 'The rectangle holds the "work" of your algorithm — calculations, variable assignments, function calls, anything that changes internal state.',
+    use: 'Use for assignment statements, arithmetic, string operations, and any internal transformation of variables.',
+    py: 'total = a + b + c\naverage = total / 3\nname = name.strip().title()\ncount = count + 1',
+    example: 'total = a + b + c'
+  },
+  {
+    id: 'decision', name: 'Decision', shape: 'decision',
+    short: 'Asks a Yes/No question and branches the flow.',
+    purpose: 'The diamond is the heart of logic. It evaluates a condition and routes execution down one of two paths. Decisions enable branching (if/else) and looping (while/for).',
+    use: 'Use for if, elif, else, while conditions. Always label outgoing arrows with Yes/No (or True/False).',
+    py: '# Branching\nif score >= 50:\n    print("Pass")\nelse:\n    print("Fail")\n\n# Looping\nwhile count < n:\n    count = count + 1',
+    example: 'count < N?'
+  },
+  {
+    id: 'flowline', name: 'Flowline', shape: 'flowline',
+    short: 'Arrows that connect symbols and show direction of flow.',
+    purpose: 'Flowlines give your algorithm its sequence. Without them, symbols are just isolated boxes. They define the order in which steps execute.',
+    use: 'Always draw arrows pointing in the direction of flow. Never leave ambiguous direction. Use them to connect every symbol.',
+    py: '# Implicit in Python —\n# statements run in the\n# order they are written,\n# top to bottom.',
+    example: 'flowline'
+  },
+  {
+    id: 'connector', name: 'Connector', shape: 'connector',
+    short: 'Bridges parts of a flowchart, often across pages.',
+    purpose: 'When a flowchart gets large or spills across pages, connectors let you "teleport" the flow without drawing long, messy arrows everywhere. They are usually labeled with letters or numbers.',
+    use: 'Use when arrows would cross too many other lines, or when continuing the flowchart on another page.',
+    py: '# No direct Python equivalent —\n# represents structural linkage.\n# Similar to function calls\n# or splitting code across\n# modules / files.',
+    example: 'connector'
+  }
+];
+
+const DEMO_ALGORITHM = [
+  { type: 'terminator', text: 'Start', code: '', desc: 'Program begins execution.', vars: {}, codeLine: -1 },
+  { type: 'io', text: 'INPUT num1, num2, num3', code: 'num1 = 10\nnum2 = 20\nnum3 = 30', desc: 'Read three numbers from the user. For this demo, we use 10, 20, and 30.', vars: { num1: 10, num2: 20, num3: 30 }, codeLine: 1 },
+  { type: 'process', text: 'total = num1 + num2 + num3', code: 'total = num1 + num2 + num3', desc: 'Add the three numbers together and store the result in total.', vars: { total: 60 }, codeLine: 4 },
+  { type: 'process', text: 'avg = total / 3', code: 'avg = total / 3', desc: 'Divide the total by 3 to get the average.', vars: { avg: 20.0 }, codeLine: 5 },
+  { type: 'io', text: 'OUTPUT avg', code: 'print(avg)', desc: 'Display the computed average on the screen.', vars: {}, codeLine: 6 },
+  { type: 'terminator', text: 'End', code: '', desc: 'Program terminates. Variables are released.', vars: {}, codeLine: -1 }
+];
+
+const DEMO_CODE = [
+  '# Calculate average of 3 numbers',
+  'num1 = 10',
+  'num2 = 20',
+  'num3 = 30',
+  'total = num1 + num2 + num3',
+  'avg = total / 3',
+  'print(avg)'
+];
+
+const TASKS = {
+  1: {
+    title: 'Sum Three Numbers',
+    description: 'Given three numbers, namely num1, num2 and num3. Total all three numbers and display the result. Sketch the program flow chart.',
+    steps: [
+      { type: 'terminator', text: 'Start' },
+      { type: 'io', text: 'INPUT num1, num2, num3' },
+      { type: 'process', text: 'total = num1 + num2 + num3' },
+      { type: 'io', text: 'OUTPUT total' },
+      { type: 'terminator', text: 'End' }
+    ]
+  },
+  2: {
+    title: 'Sum N Numbers (with loop)',
+    description: 'Prompt user to enter a value representing the total numbers to be added. User is required to key in each number to be added. The adding will stop when the total numbers entered has reached. It will display the total values of all numbers entered.',
+    steps: [
+      { type: 'terminator', text: 'Start' },
+      { type: 'io', text: 'INPUT N' },
+      { type: 'process', text: 'total = 0, count = 0' },
+      { type: 'io', text: 'INPUT num' },
+      { type: 'process', text: 'total = total + num' },
+      { type: 'process', text: 'count = count + 1' },
+      { type: 'decision', text: 'count < N ?' },
+      { type: 'io', text: 'OUTPUT total' },
+      { type: 'terminator', text: 'End' }
+    ],
+    loopBackTo: 3 // index of "INPUT num" — Yes branch loops here
+  }
+};
+
+const EXAMPLES = {
+  seq: {
+    label: 'Example A',
+    title: 'Calculate the area of a rectangle',
+    badge: 'Linear',
+    steps: [
+      { type: 'terminator', text: 'Start' },
+      { type: 'io', text: 'INPUT length, width' },
+      { type: 'process', text: 'area = length × width' },
+      { type: 'io', text: 'OUTPUT area' },
+      { type: 'terminator', text: 'End' }
+    ],
+    plain: [
+      'Begin the program.',
+      'Ask the user for the length and width of a rectangle.',
+      'Multiply length by width and store the result in area.',
+      'Display the area to the user.',
+      'End the program.'
+    ],
+    insight: 'This is a pure sequence — five steps, top to bottom, no decisions. Most simple calculations follow this exact shape. Get comfortable seeing it.'
+  },
+  loop: {
+    label: 'Example B',
+    title: 'Countdown from 10 to 1',
+    badge: 'Loop',
+    steps: [
+      { type: 'terminator', text: 'Start' },
+      { type: 'process', text: 'n = 10' },
+      { type: 'io', text: 'OUTPUT n' },
+      { type: 'process', text: 'n = n - 1' },
+      { type: 'decision', text: 'n >= 1 ?' },
+      { type: 'terminator', text: 'End' }
+    ],
+    loopBackTo: 2,
+    plain: [
+      'Begin the program.',
+      'Set n to 10.',
+      'Print the current value of n.',
+      'Decrease n by 1.',
+      'Check: is n still greater than or equal to 1?',
+      'If yes, go back to step 3 (loop). If no, continue.',
+      'End the program.'
+    ],
+    insight: 'The diamond creates the loop. Its "Yes" branch flows back up to repeat the body; its "No" branch exits. Every while-loop and for-loop in Python works exactly this way.'
+  }
+};
+
+const QUIZ = [
+  {
+    q: 'Which flowchart symbol is used to represent a decision point in the algorithm?',
+    options: ['Rectangle', 'Diamond', 'Parallelogram', 'Oval'],
+    answer: 1,
+    explain: 'The diamond (rhombus) represents a decision. It asks a Yes/No question and branches the flow into two paths.'
+  },
+  {
+    q: 'What is the purpose of the parallelogram symbol in a flowchart?',
+    options: ['To mark the start of the program', 'To perform a calculation', 'To represent input or output', 'To connect two pages'],
+    answer: 2,
+    explain: 'The parallelogram represents Input/Output — any data entering (input()) or leaving (print()) the program.'
+  },
+  {
+    q: 'In a looping flowchart, the "Yes" branch of the decision typically points...',
+    options: ['Forward to the End symbol', 'Back to an earlier step in the loop body', 'To a connector circle', 'To a new parallelogram'],
+    answer: 1,
+    explain: 'The "Yes" branch loops back to repeat the loop body. The "No" branch exits the loop and continues forward.'
+  },
+  {
+    q: 'Which symbol marks where the algorithm begins and ends?',
+    options: ['Rectangle', 'Diamond', 'Parallelogram', 'Oval (terminator)'],
+    answer: 3,
+    explain: 'The oval — also called the terminator — marks the Start and End of the algorithm. Every flowchart needs exactly one Start and at least one End.'
+  },
+  {
+    q: 'What do flowlines (arrows) represent in a flowchart?',
+    options: ['The order in which steps execute', 'Variable assignments', 'User input only', 'Optional steps that may be skipped'],
+    answer: 0,
+    explain: 'Flowlines show the direction of flow — the sequence in which steps execute. They connect every symbol and give the algorithm its order.'
+  }
+];
+
+/* ============================================================
+   SHAPE RENDERER
+   ============================================================ */
+function shapeSVG(type, text, opts = {}) {
+  const fill = opts.fill ?? '#161f36';
+  const stroke = opts.stroke ?? '#2d4068';
+  const strokeWidth = opts.strokeWidth ?? 2;
+  const textColor = opts.textColor ?? '#eaf1fb';
+  const active = opts.active;
+  const width = opts.width ?? 220;
+  const height = opts.height ?? 70;
+  const fontSize = opts.fontSize ?? 11.5;
+
+  const lines = Array.isArray(text) ? text : text.split('\n');
+  const lineHeight = fontSize + 3;
+  const totalTextHeight = lines.length * lineHeight;
+  const startY = height/2 - totalTextHeight/2 + fontSize - 1;
+
+  let textHTML = '';
+  lines.forEach((line, i) => {
+    textHTML += `<text x="${width/2}" y="${startY + i * lineHeight}" text-anchor="middle" fill="${textColor}" font-family="JetBrains Mono, monospace" font-size="${fontSize}" font-weight="500">${escapeHTML(line)}</text>`;
+  });
+
+  const aFill = '#2a1a0e';
+  const aStroke = '#ff8a3d';
+  const aText = '#ffb547';
+  const f = active ? aFill : fill;
+  const s = active ? aStroke : stroke;
+  const sw = active ? 2.5 : strokeWidth;
+  const t = active ? aText : textColor;
+
+  let shapeHTML = '';
+  const padX = 18;
+  const halfH = height/2;
+  switch(type) {
+    case 'terminator':
+      shapeHTML = `<rect x="${padX}" y="${halfH-22}" width="${width-padX*2}" height="44" rx="22" ry="22" fill="${f}" stroke="${s}" stroke-width="${sw}"/>`;
+      break;
+    case 'process':
+      shapeHTML = `<rect x="${padX}" y="${halfH-22}" width="${width-padX*2}" height="44" fill="${f}" stroke="${s}" stroke-width="${sw}" rx="3"/>`;
+      break;
+    case 'io':
+      shapeHTML = `<polygon points="${padX+18},${halfH-22} ${width-padX},${halfH-22} ${width-padX-18},${halfH+22} ${padX},${halfH+22}" fill="${f}" stroke="${s}" stroke-width="${sw}"/>`;
+      break;
+    case 'decision':
+      shapeHTML = `<polygon points="${width/2},4 ${width-4},${halfH} ${width/2},${height-4} 4,${halfH}" fill="${f}" stroke="${s}" stroke-width="${sw}"/>`;
+      break;
+    case 'connector':
+      shapeHTML = `<circle cx="${width/2}" cy="${halfH}" r="14" fill="${f}" stroke="${s}" stroke-width="${sw}"/>`;
+      break;
+  }
+
+  const filter = active ? `filter: drop-shadow(0 0 14px rgba(255,138,61,0.85));` : '';
+  const textHTMLActive = active ? textHTML.replace(`fill="${textColor}"`, `fill="${aText}"`) : textHTML;
+
+  return `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" style="${filter} overflow: visible;">${shapeHTML}${textHTMLActive}</svg>`;
+}
+
+function escapeHTML(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
+function arrowSVG(label) {
+  return `<div class="fc-connector"></div>`;
+}
+
+/* ============================================================
+   PROGRESS TRACKING
+   ============================================================ */
+const progress = {
+  symbols: new Set(),
+  demo: false,
+  task1: false,
+  task2: false,
+  quiz: false
+};
+
+function updateGlobalProgress() {
+  let total = 0;
+  total += progress.symbols.size; // up to 6
+  if (progress.demo) total += 1;
+  if (progress.task1) total += 1;
+  if (progress.task2) total += 1;
+  if (progress.quiz) total += 1;
+  const max = 10;
+  const pct = Math.round((total / max) * 100);
+  document.getElementById('globalProgress').textContent = pct + '%';
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+let toastTimer;
+function showToast(title, msg, type = 'info') {
+  const t = document.getElementById('toast');
+  t.className = 'toast ' + type;
+  document.getElementById('toastTitle').textContent = title;
+  document.getElementById('toastMsg').textContent = msg;
+  const icons = {
+    success: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>',
+    error: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>',
+    info: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>'
+  };
+  document.getElementById('toastIcon').innerHTML = icons[type] || icons.info;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+/* ============================================================
+   HERO ANIMATION
+   ============================================================ */
+const heroSteps = [
+  { type: 'terminator', text: 'Start', trace: 'initializing' },
+  { type: 'io', text: 'INPUT a, b, c', trace: 'reading a, b, c' },
+  { type: 'process', text: 'sum = a + b + c', trace: 'computing sum' },
+  { type: 'process', text: 'avg = sum / 3', trace: 'computing average' },
+  { type: 'io', text: 'OUTPUT avg', trace: 'printing result' },
+  { type: 'terminator', text: 'End', trace: 'complete' }
+];
+
+let heroIdx = 0;
+function renderHero() {
+  const container = document.getElementById('heroFlowchart');
+  container.innerHTML = '';
+  for (let i = 0; i < heroSteps.length; i++) {
+    const isActive = i === heroIdx;
+    const node = document.createElement('div');
+    node.className = 'fc-anim-in';
+    node.style.animationDelay = (i * 0.05) + 's';
+    node.innerHTML = shapeSVG(heroSteps[i].type, heroSteps[i].text, { active: isActive, width: 220, height: 64 });
+    container.appendChild(node);
+    if (i < heroSteps.length - 1) {
+      const conn = document.createElement('div');
+      conn.className = 'fc-connector' + (isActive ? ' active' : '');
+      container.appendChild(conn);
+    }
+  }
+  document.getElementById('heroTrace').textContent = heroSteps[heroIdx].trace;
+}
+
+function heroTick() {
+  heroIdx = (heroIdx + 1) % heroSteps.length;
+  if (heroIdx === 0) {
+    // brief pause then restart
+    setTimeout(renderHero, 200);
+  } else {
+    renderHero();
+  }
+}
+
+/* ============================================================
+   SYMBOLS LIBRARY
+   ============================================================ */
+function renderSymbolGrid() {
+  const grid = document.getElementById('symbolGrid');
+  grid.innerHTML = SYMBOLS.map(sym => {
+    let visual = '';
+    if (sym.shape === 'flowline') {
+      visual = `<svg viewBox="0 0 220 70" width="220" height="70">
+        <defs><marker id="ar-${sym.id}" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#ff8a3d"/></marker></defs>
+        <path d="M 30 35 L 180 35" stroke="#ff8a3d" stroke-width="3" marker-end="url(#ar-${sym.id})"/>
+      </svg>`;
+    } else if (sym.shape === 'connector') {
+      visual = `<svg viewBox="0 0 220 70" width="220" height="70">
+        <circle cx="50" cy="35" r="14" fill="#161f36" stroke="#2d4068" stroke-width="2"/>
+        <text x="50" y="39" text-anchor="middle" fill="#ff8a3d" font-family="JetBrains Mono" font-size="12" font-weight="700">A</text>
+        <path d="M 70 35 L 145 35" stroke="#2d4068" stroke-width="2" stroke-dasharray="5,4"/>
+        <circle cx="170" cy="35" r="14" fill="#161f36" stroke="#2d4068" stroke-width="2"/>
+        <text x="170" y="39" text-anchor="middle" fill="#ff8a3d" font-family="JetBrains Mono" font-size="12" font-weight="700">A</text>
+      </svg>`;
+    } else {
+      visual = shapeSVG(sym.shape, sym.example, { width: 220, height: 70 });
+    }
+    return `
+      <div class="symbol-card" data-sym="${sym.id}" onclick="openSymbol('${sym.id}')">
+        <div class="flex items-center justify-center mb-4 h-20">${visual}</div>
+        <div class="font-display font-semibold text-lg mb-1">${sym.name}</div>
+        <div class="text-sm text-[var(--fg-dim)]">${sym.short}</div>
+        <div class="mt-4 flex items-center gap-2 text-xs font-mono text-[var(--accent-2)]">
+          <span>Explore</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function openSymbol(id) {
+  const sym = SYMBOLS.find(s => s.id === id);
+  if (!sym) return;
+  
+  progress.symbols.add(id);
+  document.querySelector(`[data-sym="${id}"]`).classList.add('explored');
+  updateGlobalProgress();
+  
+  const detail = document.getElementById('symbolDetail');
+  detail.classList.remove('hidden');
+  
+  let visual = '';
+  if (sym.shape === 'flowline') {
+    visual = `<svg viewBox="0 0 220 70" width="220" height="70">
+      <defs><marker id="ar2-${sym.id}" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#ff8a3d"/></marker></defs>
+      <path d="M 30 35 L 180 35" stroke="#ff8a3d" stroke-width="3" marker-end="url(#ar2-${sym.id})"/>
+    </svg>`;
+  } else if (sym.shape === 'connector') {
+    visual = `<svg viewBox="0 0 220 70" width="220" height="70">
+      <circle cx="50" cy="35" r="14" fill="#161f36" stroke="#2d4068" stroke-width="2"/>
+      <text x="50" y="39" text-anchor="middle" fill="#ff8a3d" font-family="JetBrains Mono" font-size="12" font-weight="700">A</text>
+      <path d="M 70 35 L 145 35" stroke="#2d4068" stroke-width="2" stroke-dasharray="5,4"/>
+      <circle cx="170" cy="35" r="14" fill="#161f36" stroke="#2d4068" stroke-width="2"/>
+      <text x="170" y="39" text-anchor="middle" fill="#ff8a3d" font-family="JetBrains Mono" font-size="12" font-weight="700">A</text>
+    </svg>`;
+  } else {
+    visual = shapeSVG(sym.shape, sym.example, { width: 220, height: 70 });
+  }
+  
+  document.getElementById('detailVisual').innerHTML = visual;
+  document.getElementById('detailName').textContent = sym.name;
+  document.getElementById('detailPurpose').textContent = sym.purpose;
+  document.getElementById('detailUse').textContent = sym.use;
+  document.getElementById('detailPy').textContent = sym.py;
+  
+  detail.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  
+  if (progress.symbols.size === SYMBOLS.length) {
+    setTimeout(() => showToast('All symbols explored!', 'You\'ve visited every building block. Move on to the live demo.', 'success'), 600);
+  }
+}
+
+function closeSymbolDetail() {
+  document.getElementById('symbolDetail').classList.add('hidden');
+  document.getElementById('symbols').scrollIntoView({ behavior: 'smooth' });
+}
+
+/* ============================================================
+   LIVE DEMO
+   ============================================================ */
+let demoState = {
+  step: -1,
+  running: false,
+  timer: null,
+  vars: {},
+  speed: 1200
+};
+
+function renderDemoFlowchart() {
+  const container = document.getElementById('demoFlowchart');
+  container.innerHTML = '';
+  DEMO_ALGORITHM.forEach((step, i) => {
+    const isActive = i === demoState.step;
+    const node = document.createElement('div');
+    node.innerHTML = shapeSVG(step.type, step.text, { active: isActive, width: 240, height: 70 });
+    container.appendChild(node);
+    if (i < DEMO_ALGORITHM.length - 1) {
+      const conn = document.createElement('div');
+      conn.className = 'fc-connector' + (isActive ? ' active' : '');
+      container.appendChild(conn);
+    }
+  });
+  document.getElementById('demoStepTotal').textContent = DEMO_ALGORITHM.length;
+}
+
+function renderDemoCode() {
+  const codeEl = document.getElementById('demoCode');
+  codeEl.innerHTML = DEMO_CODE.map((line, i) => {
+    const activeLine = (demoState.step >= 0 && DEMO_ALGORITHM[demoState.step].codeLine === i);
+    return `<span class="code-line ${activeLine ? 'active' : ''}" data-line="${i+1}">${escapeHTML(line) || '&nbsp;'}</span>`;
+  }).join('');
+}
+
+function renderDemoVars() {
+  const varsEl = document.getElementById('demoVars');
+  const entries = Object.entries(demoState.vars);
+  if (entries.length === 0) {
+    varsEl.innerHTML = '<div class="var-row text-[var(--muted)] italic">No variables yet</div>';
+    return;
+  }
+  varsEl.innerHTML = entries.map(([k, v]) => 
+    `<div class="var-row"><span class="var-name">${k}</span><span class="var-value">${v}</span></div>`
+  ).join('');
+  // Flash the last updated
+  const rows = varsEl.querySelectorAll('.var-row');
+  if (rows.length > 0) {
+    rows[rows.length - 1].classList.add('flash');
+  }
+}
+
+function updateDemoUI() {
+  renderDemoFlowchart();
+  renderDemoCode();
+  renderDemoVars();
+  
+  if (demoState.step >= 0) {
+    const step = DEMO_ALGORITHM[demoState.step];
+    document.getElementById('demoStepNum').textContent = demoState.step + 1;
+    document.getElementById('demoDesc').innerHTML = step.desc;
+    // Add new vars
+    Object.entries(step.vars).forEach(([k, v]) => {
+      demoState.vars[k] = v;
+    });
+    renderDemoVars();
+  } else {
+    document.getElementById('demoStepNum').textContent = '0';
+    document.getElementById('demoDesc').innerHTML = 'Press <span class="font-mono text-[var(--accent-2)]">Run</span> to start the trace.';
+  }
+}
+
+function demoStep() {
+  if (demoState.step >= DEMO_ALGORITHM.length - 1) {
+    demoStop();
+    return;
+  }
+  demoState.step++;
+  updateDemoUI();
+  if (demoState.step === DEMO_ALGORITHM.length - 1) {
+    demoStop();
+    if (!progress.demo) {
+      progress.demo = true;
+      updateGlobalProgress();
+      setTimeout(() => showToast('Demo complete!', 'You traced the full algorithm. Try Practice next.', 'success'), 600);
+    }
+  }
+}
+
+function demoRun() {
+  if (demoState.running) {
+    demoStop();
+    return;
+  }
+  if (demoState.step >= DEMO_ALGORITHM.length - 1) {
+    demoReset();
+    setTimeout(() => {
+      demoState.running = true;
+      updateRunBtn();
+      demoState.timer = setInterval(demoStep, demoState.speed);
+    }, 200);
+    return;
+  }
+  demoState.running = true;
+  updateRunBtn();
+  demoStep();
+  demoState.timer = setInterval(demoStep, demoState.speed);
+}
+
+function demoStop() {
+  demoState.running = false;
+  if (demoState.timer) { clearInterval(demoState.timer); demoState.timer = null; }
+  updateRunBtn();
+}
+
+function updateRunBtn() {
+  const btn = document.getElementById('demoRunBtn');
+  if (demoState.running) {
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg> Pause';
+  } else {
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> Run';
+  }
+}
+
+function demoReset() {
+  demoStop();
+  demoState.step = -1;
+  demoState.vars = {};
+  updateDemoUI();
+}
+
+document.getElementById('demoSpeed').addEventListener('input', (e) => {
+  demoState.speed = parseInt(e.target.value);
+  document.getElementById('demoSpeedLabel').textContent = (demoState.speed / 1000).toFixed(1) + 's';
+  if (demoState.running) {
+    clearInterval(demoState.timer);
+    demoState.timer = setInterval(demoStep, demoState.speed);
+  }
+});
+
+/* ============================================================
+   EXAMPLES
+   ============================================================ */
+let currentExample = 'seq';
+
+function switchExample(key) {
+  currentExample = key;
+  document.querySelectorAll('#examples .tab-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  renderExample();
+}
+
+function renderExample() {
+  const ex = EXAMPLES[currentExample];
+  document.getElementById('exampleLabel').textContent = ex.label;
+  document.getElementById('exampleTitle').textContent = ex.title;
+  document.getElementById('exampleBadge').textContent = ex.badge;
+  
+  const fc = document.getElementById('exampleFlowchart');
+  fc.innerHTML = '';
+  ex.steps.forEach((step, i) => {
+    const node = document.createElement('div');
+    node.innerHTML = shapeSVG(step.type, step.text, { width: 240, height: 70 });
+    fc.appendChild(node);
+    if (i < ex.steps.length - 1) {
+      const conn = document.createElement('div');
+      conn.className = 'fc-connector';
+      fc.appendChild(conn);
+    }
+  });
+  
+  // If there's a loop, add visual indicator
+  if (ex.loopBackTo !== undefined) {
+    // Add "Yes" label to the loop back and "No" label to forward
+    const connectors = fc.querySelectorAll('.fc-connector');
+    const lastConn = connectors[connectors.length - 1];
+    if (lastConn) {
+      const noLabel = document.createElement('div');
+      noLabel.className = 'font-mono text-xs text-[var(--green)] -mt-1 mb-1';
+      noLabel.textContent = 'No ↓';
+      lastConn.parentNode.insertBefore(noLabel, lastConn);
+    }
+  }
+  
+  document.getElementById('exampleSteps').innerHTML = ex.plain.map((s, i) => 
+    `<li class="flex gap-3"><span class="font-mono text-[var(--accent-2)] flex-shrink-0">${String(i+1).padStart(2,'0')}</span><span>${s}</span></li>`
+  ).join('');
+  document.getElementById('exampleInsight').textContent = ex.insight;
+}
+
+/* ============================================================
+   PRACTICE BUILDER
+   ============================================================ */
+let currentTask = 1;
+let placed = []; // array of step indices in placement order
+let shuffled = []; // shuffled indices for palette
+let hintUsed = false;
+
+function switchTask(n) {
+  currentTask = n;
+  document.querySelectorAll('#practice .tab-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.task == n);
+  });
+  document.getElementById('taskNum').textContent = n;
+  document.getElementById('taskDescription').textContent = TASKS[n].description;
+  resetBuild();
+}
+
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function resetBuild() {
+  placed = [];
+  hintUsed = false;
+  const steps = TASKS[currentTask].steps;
+  shuffled = shuffleArray(steps.map((_, i) => i));
+  // Make sure first step isn't already correct (force some thinking)
+  if (shuffled[0] === 0) {
+    [shuffled[0], shuffled[1]] = [shuffled[1], shuffled[0]];
+  }
+  document.getElementById('totalCount').textContent = steps.length;
+  document.getElementById('feedbackArea').classList.add('hidden');
+  renderPalette();
+  renderBuild();
+  updateBuildControls();
+}
+
+function renderPalette() {
+  const steps = TASKS[currentTask].steps;
+  const palette = document.getElementById('paletteArea');
+  palette.innerHTML = shuffled.map(idx => {
+    const step = steps[idx];
+    const isUsed = placed.includes(idx);
+    const isHint = hintUsed && placed.length < steps.length && 
+                   steps[placed.length] === idx && 
+                   placed.length < steps.length;
+    return `
+      <div class="palette-item ${isUsed ? 'used' : ''} ${isHint ? 'hint' : ''}" onclick="placeStep(${idx})">
+        <div class="flex-shrink-0">${shapeSVG(step.type, '', { width: 80, height: 40, fontSize: 9 })}</div>
+        <div class="flex-1 min-w-0">
+          <div class="font-mono text-xs text-[var(--accent-2)] uppercase">${step.type}</div>
+          <div class="font-mono text-xs text-[var(--fg-dim)] truncate">${escapeHTML(step.text)}</div>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderBuild() {
+  const steps = TASKS[currentTask].steps;
+  const area = document.getElementById('buildArea');
+  area.innerHTML = '';
+  
+  if (placed.length === 0) {
+    area.innerHTML = '<div class="text-[var(--muted)] font-mono text-sm italic mt-20">Click steps from the palette →<br>to build your flowchart here</div>';
+    return;
+  }
+  
+  placed.forEach((idx, i) => {
+    const step = steps[idx];
+    const node = document.createElement('div');
+    node.className = 'fc-anim-in';
+    node.innerHTML = shapeSVG(step.type, step.text, { width: 240, height: 70 });
+    area.appendChild(node);
+    
+    if (i < placed.length - 1) {
+      const conn = document.createElement('div');
+      conn.className = 'fc-connector';
+      area.appendChild(conn);
+    }
+  });
+  
+  // For task 2, if decision is placed, show "Yes" loop back indicator
+  if (TASKS[currentTask].loopBackTo !== undefined) {
+    const decisionIdx = placed.indexOf(6); // decision is at index 6 in task 2
+    if (decisionIdx !== -1 && decisionIdx === placed.length - 1) {
+      // Show yes/no labels
+      const labels = document.createElement('div');
+      labels.className = 'flex gap-12 mt-1 mb-1';
+      labels.innerHTML = `
+        <span class="font-mono text-xs text-[var(--yellow)]">Yes ← (loops back)</span>
+        <span class="font-mono text-xs text-[var(--green)]">No ↓</span>
+      `;
+      area.appendChild(labels);
+    }
+  }
+  
+  document.getElementById('placedCount').textContent = placed.length;
+}
+
+function placeStep(idx) {
+  if (placed.includes(idx)) return;
+  if (placed.length >= TASKS[currentTask].steps.length) return;
+  placed.push(idx);
+  hintUsed = false;
+  renderPalette();
+  renderBuild();
+  updateBuildControls();
+}
+
+function undoPlacement() {
+  if (placed.length === 0) return;
+  placed.pop();
+  hintUsed = false;
+  renderPalette();
+  renderBuild();
+  updateBuildControls();
+}
+
+function showHint() {
+  if (placed.length >= TASKS[currentTask].steps.length) return;
+  hintUsed = true;
+  renderPalette();
+  showToast('Hint activated', 'The highlighted step should come next. Think about why.', 'info');
+}
+
+function updateBuildControls() {
+  document.getElementById('checkBtn').disabled = placed.length !== TASKS[currentTask].steps.length;
+  document.getElementById('undoBtn').disabled = placed.length === 0;
+  document.getElementById('hintBtn').disabled = placed.length >= TASKS[currentTask].steps.length;
+}
+
+function checkSolution() {
+  const steps = TASKS[currentTask].steps;
+  if (placed.length !== steps.length) return;
+  
+  let correct = 0;
+  const result = placed.map((idx, i) => {
+    const isCorrect = idx === i;
+    if (isCorrect) correct++;
+    return { idx, isCorrect };
+  });
+  
+  const feedback = document.getElementById('feedbackArea');
+  feedback.classList.remove('hidden');
+  
+  if (correct === steps.length) {
+    feedback.innerHTML = `
+      <div class="p-5 rounded-lg bg-[rgba(74,222,128,0.08)] border border-[var(--green)]">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="w-8 h-8 rounded-full bg-[var(--green)] flex items-center justify-center flex-shrink-0">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--bg)" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+          </div>
+          <div>
+            <div class="font-display font-bold text-[var(--green)]">Perfect! All steps in the correct order.</div>
+            <div class="text-sm text-[var(--fg-dim)] mt-0.5">You've built a valid flowchart for ${TASKS[currentTask].title}.</div>
+          </div>
+        </div>
+      </div>
+    `;
+    if (currentTask === 1 && !progress.task1) {
+      progress.task1 = true;
+      updateGlobalProgress();
+      setTimeout(() => showToast('Task 1 complete!', 'Excellent work. Try Task 2 — it has a loop.', 'success'), 400);
+    } else if (currentTask === 2 && !progress.task2) {
+      progress.task2 = true;
+      updateGlobalProgress();
+      setTimeout(() => showToast('Task 2 complete!', 'You\'ve mastered branching and loops. Try the quiz.', 'success'), 400);
+    }
+    launchConfetti();
+  } else {
+    feedback.innerHTML = `
+      <div class="p-5 rounded-lg bg-[rgba(248,113,113,0.08)] border border-[var(--red)]">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-8 h-8 rounded-full bg-[var(--red)] flex items-center justify-center flex-shrink-0">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--bg)" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </div>
+          <div>
+            <div class="font-display font-bold text-[var(--red)]">${correct} of ${steps.length} steps in the right place.</div>
+            <div class="text-sm text-[var(--fg-dim)] mt-0.5">Review the order and try again. Use Undo or Clear.</div>
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          ${result.map((r, i) => `
+            <div class="flex items-center gap-2 text-xs font-mono">
+              <span class="${r.isCorrect ? 'text-[var(--green)]' : 'text-[var(--red)]'}">${r.isCorrect ? '✓' : '✗'}</span>
+              <span class="text-[var(--muted)]">Step ${i+1}:</span>
+              <span class="${r.isCorrect ? 'text-[var(--fg-dim)]' : 'text-[var(--red)]'}">${escapeHTML(steps[r.idx].text)}</span>
+              ${!r.isCorrect ? `<span class="text-[var(--muted)]">→ expected: <span class="text-[var(--green)]">${escapeHTML(steps[i].text)}</span></span>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+}
+
+function launchConfetti() {
+  const colors = ['#ff8a3d', '#ffb547', '#4cc9f0', '#4ade80', '#fbbf24'];
+  const container = document.body;
+  for (let i = 0; i < 30; i++) {
+    const c = document.createElement('div');
+    c.style.cssText = `
+      position: fixed; width: 8px; height: 8px;
+      background: ${colors[Math.floor(Math.random() * colors.length)]};
+      left: ${50 + (Math.random() - 0.5) * 30}%;
+      top: 60%;
+      z-index: 9999; pointer-events: none;
+      border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+      animation: confetti-fall ${1 + Math.random()}s ease-out forwards;
+      animation-delay: ${Math.random() * 0.3}s;
+    `;
+    container.appendChild(c);
+    setTimeout(() => c.remove(), 2000);
+  }
+}
+
+/* ============================================================
+   QUIZ
+   ============================================================ */
+let quizState = { current: 0, score: 0, answered: false, answers: [] };
+
+function renderQuiz() {
+  if (quizState.current >= QUIZ.length) {
+    renderQuizResult();
+    return;
+  }
+  
+  const q = QUIZ[quizState.current];
+  document.getElementById('qNum').textContent = quizState.current + 1;
+  document.getElementById('qTotal').textContent = QUIZ.length;
+  document.getElementById('qScore').textContent = quizState.score;
+  document.getElementById('quizProgress').style.width = ((quizState.current + 1) / QUIZ.length * 100) + '%';
+  
+  const container = document.getElementById('quizContainer');
+  container.innerHTML = `
+    <div class="mb-6">
+      <div class="font-display font-semibold text-xl md:text-2xl mb-2 leading-snug">${q.q}</div>
+    </div>
+    <div class="space-y-3 mb-6" id="quizOptions">
+      ${q.options.map((opt, i) => `
+        <div class="quiz-option" onclick="answerQuiz(${i})" data-idx="${i}">
+          <div class="opt-letter">${String.fromCharCode(65 + i)}</div>
+          <div class="flex-1 text-sm">${opt}</div>
+        </div>
+      `).join('')}
+    </div>
+    <div id="quizExplain" class="hidden"></div>
+    <div class="flex justify-end gap-2">
+      <button class="btn-ghost text-sm" onclick="nextQuiz()" id="nextBtn" disabled>Next →</button>
+    </div>
+  `;
+  quizState.answered = false;
+}
+
+function answerQuiz(idx) {
+  if (quizState.answered) return;
+  quizState.answered = true;
+  const q = QUIZ[quizState.current];
+  const options = document.querySelectorAll('#quizOptions .quiz-option');
+  options.forEach(o => o.classList.add('disabled'));
+  
+  const selected = options[idx];
+  const correct = options[q.answer];
+  
+  if (idx === q.answer) {
+    selected.classList.add('correct');
+    quizState.score++;
+    document.getElementById('qScore').textContent = quizState.score;
+  } else {
+    selected.classList.add('incorrect');
+    correct.classList.add('correct');
+  }
+  
+  document.getElementById('quizExplain').classList.remove('hidden');
+  document.getElementById('quizExplain').innerHTML = `
+    <div class="p-4 rounded-lg bg-[var(--bg-2)] border border-[var(--border)] mb-4">
+      <div class="flex items-start gap-3">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2" class="flex-shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <div class="text-sm text-[var(--fg-dim)]">${q.explain}</div>
+      </div>
+    </div>
+  `;
+  document.getElementById('nextBtn').disabled = false;
+}
+
+function nextQuiz() {
+  if (!quizState.answered) return;
+  quizState.current++;
+  if (quizState.current >= QUIZ.length) {
+    if (!progress.quiz) {
+      progress.quiz = true;
+      updateGlobalProgress();
+    }
+    renderQuizResult();
+  } else {
+    renderQuiz();
+  }
+}
+
+function renderQuizResult() {
+  document.getElementById('quizContainer').classList.add('hidden');
+  const result = document.getElementById('quizResult');
+  result.classList.remove('hidden');
+  
+  const pct = Math.round(quizState.score / QUIZ.length * 100);
+  let title, msg, color;
+  if (pct === 100) {
+    title = 'Perfect score!'; msg = 'You\'ve mastered flowchart fundamentals.'; color = 'var(--green)';
+  } else if (pct >= 60) {
+    title = 'Good work!'; msg = 'You\'re on the right track. Review the symbols and try again.'; color = 'var(--accent-2)';
+  } else {
+    title = 'Keep practicing'; msg = 'Revisit the symbol library and examples, then retry the quiz.'; color = 'var(--red)';
+  }
+  
+  result.innerHTML = `
+    <div class="mb-6">
+      <div class="font-display font-bold text-5xl md:text-6xl mb-2" style="color: ${color}">${quizState.score}/${QUIZ.length}</div>
+      <div class="font-display font-semibold text-2xl mb-1">${title}</div>
+      <div class="text-[var(--fg-dim)]">${msg}</div>
+    </div>
+    <div class="progress-bar mb-8 max-w-xs mx-auto"><div class="progress-fill" style="width: ${pct}%"></div></div>
+    <button class="btn-primary" onclick="restartQuiz()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+      Retry Quiz
+    </button>
+  `;
+}
+
+function restartQuiz() {
+  quizState = { current: 0, score: 0, answered: false, answers: [] };
+  document.getElementById('quizContainer').classList.remove('hidden');
+  document.getElementById('quizResult').classList.add('hidden');
+  renderQuiz();
+}
+
+/* ============================================================
+   SCROLL REVEAL
+   ============================================================ */
+function initReveal() {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function init() {
+  renderSymbolGrid();
+  renderHero();
+  setInterval(heroTick, 1500);
+  
+  // Demo
+  renderDemoFlowchart();
+  renderDemoCode();
+  renderDemoVars();
+  
+  // Examples
+  renderExample();
+  
+  // Practice
+  switchTask(1);
+  
+  // Quiz
+  renderQuiz();
+  
+  // Reveal animations
+  initReveal();
+  
+  // Initial progress
+  updateGlobalProgress();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

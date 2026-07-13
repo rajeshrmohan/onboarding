@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlowChart Constructor — Section A Exercises</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0f1c;
+    --bg-2: #0f1626;
+    --bg-3: #131c30;
+    --card: #161f36;
+    --card-2: #1a2540;
+    --border: #243352;
+    --border-2: #2d4068;
+    --fg: #eaf1fb;
+    --fg-dim: #b8c5dc;
+    --muted: #7689a8;
+    --accent: #ff8a3d;
+    --accent-2: #ffb547;
+    --accent-glow: rgba(255, 138, 61, 0.4);
+    --cyan: #4cc9f0;
+    --cyan-glow: rgba(76, 201, 240, 0.3);
+    --green: #4ade80;
+    --red: #f87171;
+    --yellow: #fbbf24;
+    --grid: rgba(76, 201, 240, 0.04);
+    --grid-2: rgba(76, 201, 240, 0.08);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    margin: 0;
+    overflow-x: hidden;
+    line-height: 1.5;
+  }
+  .font-display { font-family: 'Space Grotesk', sans-serif; letter-spacing: -0.02em; }
+  .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+  .grid-bg {
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  .grid-bg-fine {
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px), linear-gradient(var(--grid-2) 1px, transparent 1px), linear-gradient(90deg, var(--grid-2) 1px, transparent 1px);
+    background-size: 20px 20px, 20px 20px, 100px 100px, 100px 100px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #0a0f1c; font-weight: 700; padding: 12px 22px; border-radius: 8px;
+    border: none; cursor: pointer; transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 8px; font-family: 'DM Sans', sans-serif;
+    box-shadow: 0 4px 20px var(--accent-glow); font-size: 14px;
+  }
+  .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 30px var(--accent-glow); }
+  .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .btn-ghost {
+    background: transparent; color: var(--fg-dim); border: 1px solid var(--border-2);
+    padding: 10px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif; font-weight: 500; font-size: 13px;
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  .btn-ghost:hover:not(:disabled) { background: var(--card); border-color: var(--accent); color: var(--accent-2); }
+  .btn-ghost:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    transition: all 0.3s;
+  }
+
+  .section-tag {
+    display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px;
+    background: rgba(255, 138, 61, 0.1); border: 1px solid rgba(255, 138, 61, 0.3);
+    color: var(--accent-2); border-radius: 100px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.05em; text-transform: uppercase;
+  }
+  .section-tag::before {
+    content: ''; width: 5px; height: 5px; background: var(--accent);
+    border-radius: 50%; box-shadow: 0 0 8px var(--accent);
+  }
+
+  .exercise-tab {
+    position: relative; width: 44px; height: 44px; border-radius: 12px;
+    background: var(--card); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700;
+    color: var(--fg-dim); cursor: pointer; transition: all 0.25s; flex-shrink: 0;
+  }
+  .exercise-tab:hover { border-color: var(--accent); color: var(--accent-2); transform: translateY(-2px); }
+  .exercise-tab.current {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: var(--bg); border-color: var(--accent);
+    box-shadow: 0 4px 20px var(--accent-glow);
+  }
+  .exercise-tab.completed {
+    background: rgba(74, 222, 128, 0.12); border-color: var(--green); color: var(--green);
+  }
+  .exercise-tab.completed::after {
+    content: '✓'; position: absolute; top: -5px; right: -5px;
+    width: 16px; height: 16px; border-radius: 50%; background: var(--green);
+    color: var(--bg); display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700;
+  }
+
+  .ipo-item {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; transition: all 0.25s;
+  }
+  .ipo-item.correct { border-color: var(--green); background: rgba(74, 222, 128, 0.06); }
+  .ipo-item.incorrect { border-color: var(--red); background: rgba(248, 113, 113, 0.06); }
+  .ipo-item.locked { opacity: 0.85; }
+
+  .ipo-btn {
+    padding: 5px 12px; border-radius: 6px; font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    border: 1px solid var(--border-2); background: var(--bg-2); color: var(--fg-dim);
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .ipo-btn:hover:not(.locked) { border-color: var(--accent); color: var(--accent-2); }
+  .ipo-btn.selected { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .ipo-btn.correct-pick { background: var(--green); color: var(--bg); border-color: var(--green); }
+  .ipo-btn.wrong-pick { background: var(--red); color: var(--bg); border-color: var(--red); }
+  .ipo-btn.locked { cursor: default; opacity: 0.5; }
+  .ipo-btn.locked.correct-pick, .ipo-btn.locked.wrong-pick { opacity: 1; }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+  }
+  .shake { animation: shake 0.3s ease; }
+
+  .palette-item {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 12px; cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; gap: 10px; user-select: none;
+  }
+  .palette-item:hover:not(.used):not(.locked) {
+    border-color: var(--accent); transform: translateX(3px); background: var(--card-2);
+  }
+  .palette-item.used { opacity: 0.25; cursor: default; pointer-events: none; }
+  .palette-item.hint {
+    border-color: var(--yellow);
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.35);
+    animation: hint-pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes hint-pulse {
+    0%, 100% { box-shadow: 0 0 12px rgba(251, 191, 36, 0.3); }
+    50% { box-shadow: 0 0 24px rgba(251, 191, 36, 0.6); }
+  }
+
+  @keyframes drawIn {
+    from { opacity: 0; transform: translateY(-10px) scale(0.92); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .fc-anim-in { animation: drawIn 0.35s ease-out both; }
+
+  .fc-connector {
+    width: 2px; height: 20px; background: var(--border-2); margin: 0 auto; position: relative;
+  }
+  .fc-connector::after {
+    content: ''; position: absolute; bottom: -1px; left: 50%; transform: translateX(-50%);
+    width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent;
+    border-top: 7px solid var(--border-2);
+  }
+
+  .code-block {
+    background: #060a14; border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    line-height: 1.8; color: #eaf1fb; overflow-x: auto;
+  }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px;
+    border-radius: 100px; font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .badge-success { background: rgba(74, 222, 128, 0.12); color: var(--green); border: 1px solid rgba(74, 222, 128, 0.3); }
+  .badge-warn { background: rgba(251, 191, 36, 0.12); color: var(--yellow); border: 1px solid rgba(251, 191, 36, 0.3); }
+  .badge-info { background: rgba(76, 201, 240, 0.12); color: var(--cyan); border: 1px solid rgba(76, 201, 240, 0.3); }
+  .badge-accent { background: rgba(255, 138, 61, 0.12); color: var(--accent-2); border: 1px solid rgba(255, 138, 61, 0.3); }
+
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--card); border: 1px solid var(--border-2); border-left: 4px solid var(--accent);
+    padding: 13px 18px; border-radius: 8px; color: var(--fg); z-index: 1000;
+    transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5); max-width: 360px;
+    display: flex; align-items: flex-start; gap: 12px;
+  }
+  .toast.show { transform: translateX(0); }
+  .toast.success { border-left-color: var(--green); }
+  .toast.error { border-left-color: var(--red); }
+  .toast.info { border-left-color: var(--cyan); }
+
+  @keyframes confetti-fall {
+    0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(500px) rotate(720deg); opacity: 0; }
+  }
+
+  @keyframes glow-pulse {
+    0%, 100% { box-shadow: 0 0 30px rgba(255,138,61,0.15); }
+    50% { box-shadow: 0 0 50px rgba(255,138,61,0.3); }
+  }
+  .glow-card { animation: glow-pulse 3s ease-in-out infinite; }
+
+  .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.7s, transform 0.7s; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+  ::selection { background: var(--accent); color: var(--bg); }
+
+  .step-num {
+    width: 28px; height: 28px; border-radius: 8px; background: var(--bg-3);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700;
+    color: var(--accent-2); flex-shrink: 0; border: 1px solid var(--border);
+  }
+
+  .check-mark {
+    width: 20px; height: 20px; border-radius: 50%; background: var(--green);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .cross-mark {
+    width: 20px; height: 20px; border-radius: 50%; background: var(--red);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+</style>
+</head>
+<body class="grid-bg">
+
+<!-- Header -->
+<nav class="sticky top-0 z-50 backdrop-blur-lg bg-[rgba(10,15,28,0.88)] border-b border-[var(--border)]">
+  <div class="max-w-7xl mx-auto px-5 py-3 flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3 flex-shrink-0">
+      <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] flex items-center justify-center shadow-lg shadow-[var(--accent-glow)]">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0a0f1c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="6" height="6" rx="3"/>
+          <rect x="15" y="15" width="6" height="6" rx="3"/>
+          <path d="M9 6h6a3 3 0 0 1 3 3v6"/>
+        </svg>
+      </div>
+      <div>
+        <div class="font-display font-bold text-base leading-none">FlowChart Constructor</div>
+        <div class="text-[10px] font-mono text-[var(--muted)] mt-0.5">Section A · Exercises</div>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2 overflow-x-auto py-1" id="exerciseTabs"></div>
+
+    <div class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--card)] border border-[var(--border)] flex-shrink-0">
+      <div class="w-2 h-2 rounded-full bg-[var(--green)] animate-pulse"></div>
+      <span class="font-mono text-xs text-[var(--muted)]">Solved</span>
+      <span class="font-mono text-xs font-bold text-[var(--accent-2)]" id="progressText">0/6</span>
+    </div>
+  </div>
+</nav>
+
+<!-- Intro -->
+<section class="py-10 md:py-14 border-b border-[var(--border)]">
+  <div class="max-w-7xl mx-auto px-5">
+    <div class="section-tag mb-4">Section A · Exercises</div>
+    <h1 class="font-display font-bold text-3xl md:text-5xl mb-4 leading-tight">
+      Now <span class="text-[var(--accent)]">you construct</span> the flowchart.
+    </h1>
+    <p class="text-[var(--fg-dim)] max-w-3xl text-base md:text-lg">
+      For each task below, first <strong class="text-[var(--cyan)]">identify the input(s), process step(s), and output(s)</strong>.
+      Then <strong class="text-[var(--accent-2)]">click the shuffled steps in the correct order</strong> to build the flowchart.
+      Get instant feedback. Use hints if you get stuck.
+    </p>
+  </div>
+</section>
+
+<!-- Exercise content -->
+<main class="max-w-7xl mx-auto px-5 py-8 md:py-12">
+  <div id="exerciseContainer"></div>
+</main>
+
+<!-- All complete celebration -->
+<div id="allComplete" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-md bg-[rgba(10,15,28,0.85)]">
+  <div class="card p-8 md:p-12 max-w-lg text-center glow-card">
+    <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] flex items-center justify-center shadow-2xl shadow-[var(--accent-glow)]">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0a0f1c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+    </div>
+    <h2 class="font-display font-bold text-3xl md:text-4xl mb-3">All six exercises solved!</h2>
+    <p class="text-[var(--fg-dim)] mb-6">You can now read a problem, identify its inputs, processes, and outputs, and translate it into a proper flowchart. That's the foundation of every program you'll ever write.</p>
+    <button class="btn-primary" onclick="document.getElementById('allComplete').classList.add('hidden')">
+      Back to exercises
+    </button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast">
+  <div id="toastIcon"></div>
+  <div>
+    <div class="font-semibold text-sm mb-0.5" id="toastTitle"></div>
+    <div class="text-xs text-[var(--fg-dim)]" id="toastMsg"></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   EXERCISE DATA
+   ============================================================ */
+const EXERCISES = [
+  {
+    id: 1,
+    title: "Sum of Two Numbers",
+    problem: "Read two numbers, num1 and num2, from the user. Add them together and display the total.",
+    hint: "Read both numbers first, then add them, then show the result.",
+    ipoItems: [
+      { text: "num1", type: "input" },
+      { text: "num2", type: "input" },
+      { text: "total = num1 + num2", type: "process" },
+      { text: "Display total", type: "output" }
+    ],
+    steps: [
+      { type: "terminator", text: "Start" },
+      { type: "io", text: "INPUT num1, num2" },
+      { type: "process", text: "total = num1 + num2" },
+      { type: "io", text: "OUTPUT total" },
+      { type: "terminator", text: "End" }
+    ],
+    python: "num1 = float(input('Enter num1: '))\nnum2 = float(input('Enter num2: '))\ntotal = num1 + num2\nprint('Total =', total)"
+  },
+  {
+    id: 2,
+    title: "Area of a Rectangle",
+    problem: "Read the length and width of a rectangle. Calculate the area and display it.",
+    hint: "Area equals length multiplied by width.",
+    ipoItems: [
+      { text: "length", type: "input" },
+      { text: "width", type: "input" },
+      { text: "area = length × width", type: "process" },
+      { text: "Display area", type: "output" }
+    ],
+    steps: [
+      { type: "terminator", text: "Start" },
+      { type: "io", text: "INPUT length, width" },
+      { type: "process", text: "area = length × width" },
+      { type: "io", text: "OUTPUT area" },
+      { type: "terminator", text: "End" }
+    ],
+    python: "length = float(input('Enter length: '))\nwidth = float(input('Enter width: '))\narea = length * width\nprint('Area =', area)"
+  },
+  {
+    id: 3,
+    title: "Celsius to Fahrenheit",
+    problem: "Read a temperature C in degrees Celsius. Convert it to Fahrenheit using F = 9/5 × C + 32 and print F.",
+    hint: "The formula is F = (9/5) × C + 32. Input is C, output is F.",
+    ipoItems: [
+      { text: "C (Celsius temperature)", type: "input" },
+      { text: "F = (9/5) × C + 32", type: "process" },
+      { text: "Display F", type: "output" }
+    ],
+    steps: [
+      { type: "terminator", text: "Start" },
+      { type: "io", text: "INPUT C" },
+      { type: "process", text: "F = (9/5) × C + 32" },
+      { type: "io", text: "OUTPUT F" },
+      { type: "terminator", text: "End" }
+    ],
+    python: "C = float(input('Enter Celsius: '))\nF = (9 / 5) * C + 32\nprint('Fahrenheit =', F)"
+  },
+  {
+    id: 4,
+    title: "Average of Three Test Scores",
+    problem: "Read three test scores: s1, s2 and s3. Calculate the average score and display it.",
+    hint: "Average = (s1 + s2 + s3) / 3. Add all three first, then divide.",
+    ipoItems: [
+      { text: "s1", type: "input" },
+      { text: "s2", type: "input" },
+      { text: "s3", type: "input" },
+      { text: "average = (s1 + s2 + s3) / 3", type: "process" },
+      { text: "Display average", type: "output" }
+    ],
+    steps: [
+      { type: "terminator", text: "Start" },
+      { type: "io", text: "INPUT s1, s2, s3" },
+      { type: "process", text: "average = (s1 + s2 + s3) / 3" },
+      { type: "io", text: "OUTPUT average" },
+      { type: "terminator", text: "End" }
+    ],
+    python: "s1 = float(input('Enter score 1: '))\ns2 = float(input('Enter score 2: '))\ns3 = float(input('Enter score 3: '))\naverage = (s1 + s2 + s3) / 3\nprint('Average =', average)"
+  },
+  {
+    id: 5,
+    title: "Total Bill with GST",
+    problem: "Read the price of an item and the quantity purchased. Calculate the subtotal, then add 9% GST, and display the final amount payable.",
+    hint: "Two process steps: subtotal = price × quantity, then total = subtotal × 1.09 (which adds 9% GST).",
+    ipoItems: [
+      { text: "price", type: "input" },
+      { text: "quantity", type: "input" },
+      { text: "subtotal = price × quantity", type: "process" },
+      { text: "total = subtotal × 1.09", type: "process" },
+      { text: "Display total", type: "output" }
+    ],
+    steps: [
+      { type: "terminator", text: "Start" },
+      { type: "io", text: "INPUT price, quantity" },
+      { type: "process", text: "subtotal = price × quantity" },
+      { type: "process", text: "total = subtotal × 1.09" },
+      { type: "io", text: "OUTPUT total" },
+      { type: "terminator", text: "End" }
+    ],
+    python: "price = float(input('Enter price: '))\nquantity = int(input('Enter quantity: '))\nsubtotal = price * quantity\ntotal = subtotal * 1.09\nprint('Total payable =', total)"
+  },
+  {
+    id: 6,
+    title: "Seconds to Minutes and Seconds",
+    problem: "Read a duration in total seconds. Convert it into minutes and remaining seconds (e.g. 130 seconds → 2 minutes 10 seconds) and display both values.",
+    hint: "Use integer division (÷) for minutes and modulo (mod) for the remaining seconds. 130 ÷ 60 = 2 minutes, 130 mod 60 = 10 seconds.",
+    ipoItems: [
+      { text: "total_seconds", type: "input" },
+      { text: "minutes = total_seconds ÷ 60", type: "process" },
+      { text: "seconds = total_seconds mod 60", type: "process" },
+      { text: "Display minutes, seconds", type: "output" }
+    ],
+    steps: [
+      { type: "terminator", text: "Start" },
+      { type: "io", text: "INPUT total_seconds" },
+      { type: "process", text: "minutes = total_seconds ÷ 60" },
+      { type: "process", text: "seconds = total_seconds mod 60" },
+      { type: "io", text: "OUTPUT minutes, seconds" },
+      { type: "terminator", text: "End" }
+    ],
+    python: "total_seconds = int(input('Enter seconds: '))\nminutes = total_seconds // 60\nseconds = total_seconds % 60\nprint(f'{minutes} min {seconds} sec')"
+  }
+];
+
+/* ============================================================
+   SHAPE RENDERER
+   ============================================================ */
+function shapeSVG(type, text, opts = {}) {
+  const fill = opts.fill ?? '#161f36';
+  const stroke = opts.stroke ?? '#2d4068';
+  const strokeWidth = opts.strokeWidth ?? 2;
+  const textColor = opts.textColor ?? '#eaf1fb';
+  const active = opts.active;
+  const width = opts.width ?? 240;
+  const height = opts.height ?? 64;
+  const fontSize = opts.fontSize ?? 11.5;
+  const compact = opts.compact ?? false;
+
+  const lines = Array.isArray(text) ? text : text.split('\n');
+  const lineHeight = fontSize + 3;
+  const totalTextHeight = lines.length * lineHeight;
+  const startY = height/2 - totalTextHeight/2 + fontSize - 1;
+
+  let textHTML = '';
+  lines.forEach((line, i) => {
+    textHTML += `<text x="${width/2}" y="${startY + i * lineHeight}" text-anchor="middle" fill="${textColor}" font-family="JetBrains Mono, monospace" font-size="${fontSize}" font-weight="500">${escapeHTML(line)}</text>`;
+  });
+
+  const aFill = '#2a1a0e';
+  const aStroke = '#ff8a3d';
+  const aText = '#ffb547';
+  const f = active ? aFill : fill;
+  const s = active ? aStroke : stroke;
+  const sw = active ? 2.5 : strokeWidth;
+  const t = active ? aText : textColor;
+
+  let shapeHTML = '';
+  const padX = compact ? 10 : 18;
+  const halfH = height/2;
+  const boxH = compact ? height - 8 : 44;
+  switch(type) {
+    case 'terminator':
+      shapeHTML = `<rect x="${padX}" y="${halfH-boxH/2}" width="${width-padX*2}" height="${boxH}" rx="${boxH/2}" ry="${boxH/2}" fill="${f}" stroke="${s}" stroke-width="${sw}"/>`;
+      break;
+    case 'process':
+      shapeHTML = `<rect x="${padX}" y="${halfH-boxH/2}" width="${width-padX*2}" height="${boxH}" fill="${f}" stroke="${s}" stroke-width="${sw}" rx="3"/>`;
+      break;
+    case 'io':
+      const skew = compact ? 8 : 18;
+      shapeHTML = `<polygon points="${padX+skew},${halfH-boxH/2} ${width-padX},${halfH-boxH/2} ${width-padX-skew},${halfH+boxH/2} ${padX},${halfH+boxH/2}" fill="${f}" stroke="${s}" stroke-width="${sw}"/>`;
+      break;
+    case 'decision':
+      shapeHTML = `<polygon points="${width/2},${halfH-boxH/2-2} ${width-padX-4},${halfH} ${width/2},${halfH+boxH/2+2} ${padX+4},${halfH}" fill="${f}" stroke="${s}" stroke-width="${sw}"/>`;
+      break;
+  }
+
+  const filter = active ? `filter: drop-shadow(0 0 12px rgba(255,138,61,0.8));` : '';
+  const textHTMLActive = active ? textHTML.replace(`fill="${textColor}"`, `fill="${aText}"`) : textHTML;
+
+  return `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" style="${filter} overflow: visible;">${shapeHTML}${textHTMLActive}</svg>`;
+}
+
+function escapeHTML(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const state = {
+  current: 0,
+  completed: new Set(),
+  // per-exercise state
+  ipoSelections: {},  // {exerciseId: {itemIdx: 'input'|'process'|'output'}}
+  ipoChecked: {},     // {exerciseId: true/false}
+  placed: [],         // array of step indices
+  shuffled: [],       // shuffled indices for palette
+  hintActive: false,
+  flowChecked: false,
+  flowCorrect: false
+};
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+let toastTimer;
+function showToast(title, msg, type = 'info') {
+  const t = document.getElementById('toast');
+  t.className = 'toast ' + type;
+  document.getElementById('toastTitle').textContent = title;
+  document.getElementById('toastMsg').textContent = msg;
+  const icons = {
+    success: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>',
+    error: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>',
+    info: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>'
+  };
+  document.getElementById('toastIcon').innerHTML = icons[type] || icons.info;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+/* ============================================================
+   EXERCISE TABS
+   ============================================================ */
+function renderTabs() {
+  const container = document.getElementById('exerciseTabs');
+  container.innerHTML = EXERCISES.map((ex, i) => {
+    let cls = 'exercise-tab';
+    if (i === state.current) cls += ' current';
+    if (state.completed.has(ex.id)) cls += ' completed';
+    return `<div class="${cls}" onclick="selectExercise(${i})" title="Exercise ${ex.id}: ${ex.title}">${ex.id}</div>`;
+  }).join('');
+  
+  document.getElementById('progressText').textContent = `${state.completed.size}/6`;
+}
+
+function selectExercise(idx) {
+  if (idx === state.current) return;
+  state.current = idx;
+  state.placed = [];
+  state.shuffled = [];
+  state.hintActive = false;
+  state.flowChecked = false;
+  state.flowCorrect = false;
+  renderTabs();
+  renderExercise();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ============================================================
+   SHUFFLE
+   ============================================================ */
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* ============================================================
+   RENDER EXERCISE
+   ============================================================ */
+function renderExercise() {
+  const ex = EXERCISES[state.current];
+  const container = document.getElementById('exerciseContainer');
+  
+  // Initialize shuffled if empty
+  if (state.shuffled.length === 0) {
+    state.shuffled = shuffleArray(ex.steps.map((_, i) => i));
+    // Ensure first step isn't already correct
+    if (state.shuffled[0] === 0) {
+      [state.shuffled[0], state.shuffled[1]] = [state.shuffled[1], state.shuffled[0]];
+    }
+  }
+  
+  const isCompleted = state.completed.has(ex.id);
+  
+  container.innerHTML = `
+    <!-- Exercise header -->
+    <div class="mb-6 reveal visible">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] flex items-center justify-center flex-shrink-0 shadow-lg shadow-[var(--accent-glow)]">
+          <span class="font-mono font-bold text-xl text-[var(--bg)]">${ex.id}</span>
+        </div>
+        <div>
+          <div class="font-mono text-xs text-[var(--accent-2)] uppercase tracking-wider mb-0.5">Exercise ${ex.id}</div>
+          <h2 class="font-display font-bold text-2xl md:text-3xl">${ex.title}</h2>
+        </div>
+        ${isCompleted ? '<div class="badge badge-success ml-auto"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>Solved</div>' : ''}
+      </div>
+      <div class="card p-5 bg-[var(--bg-2)]">
+        <div class="font-mono text-xs text-[var(--cyan)] uppercase tracking-wider mb-2">Problem</div>
+        <p class="text-[var(--fg)] leading-relaxed">${ex.problem}</p>
+      </div>
+    </div>
+
+    <!-- Part A: IPO classification -->
+    <div class="card p-6 md:p-8 mb-6 reveal visible">
+      <div class="flex items-center gap-3 mb-5">
+        <div class="step-num">A</div>
+        <div>
+          <h3 class="font-display font-semibold text-lg">Identify Inputs, Processes, and Outputs</h3>
+          <p class="text-sm text-[var(--muted)]">For each item below, click whether it is an Input, Process, or Output.</p>
+        </div>
+      </div>
+      <div class="space-y-3" id="ipoArea"></div>
+      <div class="mt-5 flex flex-wrap items-center gap-3">
+        <button class="btn-primary" onclick="checkIPO()" id="ipoCheckBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+          Check Classification
+        </button>
+        <button class="btn-ghost" onclick="resetIPO()" id="ipoResetBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+          Reset
+        </button>
+        <div id="ipoFeedback" class="ml-auto"></div>
+      </div>
+    </div>
+
+    <!-- Part B: Flowchart builder -->
+    <div class="card p-6 md:p-8 mb-6 reveal visible">
+      <div class="flex items-center gap-3 mb-5">
+        <div class="step-num">B</div>
+        <div>
+          <h3 class="font-display font-semibold text-lg">Build the Flowchart</h3>
+          <p class="text-sm text-[var(--muted)]">Click the shuffled steps below in the correct order to construct the flowchart.</p>
+        </div>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-6">
+        <!-- Build area -->
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <div class="font-mono text-xs text-[var(--muted)] uppercase tracking-wider">Your flowchart</div>
+            <div class="badge badge-info"><span id="placedCount">0</span> / <span id="totalCount">${ex.steps.length}</span> placed</div>
+          </div>
+          <div class="rounded-lg border border-dashed border-[var(--border)] bg-[var(--bg-2)] p-4 min-h-[360px] flex flex-col items-center justify-start">
+            <div id="buildArea" class="flex flex-col items-center w-full"></div>
+          </div>
+
+          <div class="mt-4 flex flex-wrap gap-2">
+            <button class="btn-ghost" onclick="undoPlacement()" id="undoBtn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+              Undo
+            </button>
+            <button class="btn-ghost" onclick="showHint()" id="hintBtn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2v1.3h6V16.7c0-.8.4-1.5 1-2A7 7 0 0 0 12 2z"/></svg>
+              Hint
+            </button>
+            <button class="btn-ghost" onclick="resetBuild()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/></svg>
+              Clear
+            </button>
+            <button class="btn-primary ml-auto" onclick="checkSolution()" id="checkBtn" disabled>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+              Check Solution
+            </button>
+          </div>
+
+          <div id="feedbackArea" class="mt-4"></div>
+        </div>
+
+        <!-- Palette -->
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <div class="font-mono text-xs text-[var(--muted)] uppercase tracking-wider">Available steps (shuffled)</div>
+            <div class="font-mono text-xs text-[var(--muted)]">Click in order</div>
+          </div>
+          <div id="paletteArea" class="space-y-2.5"></div>
+
+          <div class="mt-5 p-4 rounded-lg bg-[var(--bg-2)] border border-[var(--border)]">
+            <div class="flex items-start gap-3">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2" class="flex-shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+              <div class="text-xs text-[var(--fg-dim)] leading-relaxed">
+                <strong class="text-[var(--cyan)]">Reminder:</strong>
+                <span class="font-mono text-[var(--accent-2)]">Oval</span> = Start/End ·
+                <span class="font-mono text-[var(--accent-2)]">Parallelogram</span> = Input/Output ·
+                <span class="font-mono text-[var(--accent-2)]">Rectangle</span> = Process.
+                Start with <span class="font-mono text-[var(--accent-2)]">Start</span>, end with <span class="font-mono text-[var(--accent-2)]">End</span>.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Solution view (shown after correct) -->
+    <div id="solutionArea" class="${state.flowCorrect ? '' : 'hidden'}"></div>
+  `;
+  
+  renderIPO();
+  renderPalette();
+  renderBuild();
+  updateBuildControls();
+  
+  if (state.flowCorrect) {
+    renderSolution();
+  }
+}
+
+/* ============================================================
+   IPO CLASSIFICATION
+   ============================================================ */
+function renderIPO() {
+  const ex = EXERCISES[state.current];
+  const area = document.getElementById('ipoArea');
+  const selections = state.ipoSelections[ex.id] || {};
+  const checked = state.ipoChecked[ex.id];
+  
+  area.innerHTML = ex.ipoItems.map((item, i) => {
+    const sel = selections[i];
+    const isCorrect = checked && sel === item.type;
+    const isWrong = checked && sel && sel !== item.type;
+    let itemCls = 'ipo-item';
+    if (isCorrect) itemCls += ' correct locked';
+    if (isWrong) itemCls += ' incorrect locked';
+    
+    const btnCls = (label) => {
+      let c = 'ipo-btn';
+      if (sel === label) c += ' selected';
+      if (checked) {
+        c += ' locked';
+        if (label === item.type) c += ' correct-pick';
+        if (sel === label && sel !== item.type) c += ' wrong-pick';
+      }
+      return c;
+    };
+    
+    return `
+      <div class="${itemCls}" data-ipo-item="${i}">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div class="font-mono text-sm text-[var(--fg)] flex-1 min-w-0">${escapeHTML(item.text)}</div>
+          <div class="flex gap-2 flex-shrink-0">
+            <button class="${btnCls('input')}" onclick="selectIPO(${i}, 'input')" ${checked ? 'disabled' : ''}>Input</button>
+            <button class="${btnCls('process')}" onclick="selectIPO(${i}, 'process')" ${checked ? 'disabled' : ''}>Process</button>
+            <button class="${btnCls('output')}" onclick="selectIPO(${i}, 'output')" ${checked ? 'disabled' : ''}>Output</button>
+          </div>
+        </div>
+        ${isWrong ? `<div class="mt-2 text-xs font-mono text-[var(--green)]">Correct answer: ${item.type}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function selectIPO(itemIdx, type) {
+  const ex = EXERCISES[state.current];
+  if (!state.ipoSelections[ex.id]) state.ipoSelections[ex.id] = {};
+  state.ipoSelections[ex.id][itemIdx] = type;
+  renderIPO();
+}
+
+function checkIPO() {
+  const ex = EXERCISES[state.current];
+  const selections = state.ipoSelections[ex.id] || {};
+  
+  // Check all items have been classified
+  const unclassified = ex.ipoItems.filter((_, i) => !selections[i]).length;
+  if (unclassified > 0) {
+    showToast('Not ready yet', `Please classify all ${ex.ipoItems.length} items (${unclassified} remaining)`, 'error');
+    return;
+  }
+  
+  // Check correctness
+  let correct = 0;
+  ex.ipoItems.forEach((item, i) => {
+    if (selections[i] === item.type) correct++;
+  });
+  
+  state.ipoChecked[ex.id] = true;
+  renderIPO();
+  
+  const feedback = document.getElementById('ipoFeedback');
+  if (correct === ex.ipoItems.length) {
+    feedback.innerHTML = '<div class="badge badge-success"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>All correct</div>';
+    showToast('Classification correct!', 'Now build the flowchart in Part B.', 'success');
+  } else {
+    feedback.innerHTML = `<div class="badge badge-warn">${correct} / ${ex.ipoItems.length} correct — see highlighted answers</div>`;
+    showToast('Some items incorrect', 'Green shows the right classification. Reset to try again.', 'error');
+  }
+}
+
+function resetIPO() {
+  const ex = EXERCISES[state.current];
+  state.ipoSelections[ex.id] = {};
+  state.ipoChecked[ex.id] = false;
+  document.getElementById('ipoFeedback').innerHTML = '';
+  renderIPO();
+}
+
+/* ============================================================
+   PALETTE & BUILD
+   ============================================================ */
+function renderPalette() {
+  const ex = EXERCISES[state.current];
+  const palette = document.getElementById('paletteArea');
+  
+  palette.innerHTML = state.shuffled.map(idx => {
+    const step = ex.steps[idx];
+    const isUsed = state.placed.includes(idx);
+    const isHint = state.hintActive && !isUsed && state.placed.length < ex.steps.length && 
+                   ex.steps[state.placed.length] === step && state.placed.length < ex.steps.length &&
+                   idx === state.shuffled.find(i => i === state.placed.length);
+    // More precise hint: the step that SHOULD come next
+    const nextCorrectIdx = state.placed.length;
+    const isRealHint = state.hintActive && !isUsed && idx === nextCorrectIdx;
+    
+    return `
+      <div class="palette-item ${isUsed ? 'used' : ''} ${isRealHint ? 'hint' : ''}" onclick="placeStep(${idx})">
+        <div class="flex-shrink-0">${shapeSVG(step.type, '', { width: 70, height: 36, fontSize: 9, compact: true })}</div>
+        <div class="flex-1 min-w-0">
+          <div class="font-mono text-[10px] text-[var(--accent-2)] uppercase tracking-wider">${step.type}</div>
+          <div class="font-mono text-xs text-[var(--fg-dim)] truncate">${escapeHTML(step.text)}</div>
+        </div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" class="flex-shrink-0"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderBuild() {
+  const ex = EXERCISES[state.current];
+  const area = document.getElementById('buildArea');
+  
+  if (state.placed.length === 0) {
+    area.innerHTML = '<div class="text-[var(--muted)] font-mono text-xs italic text-center mt-16">Click steps from the palette →<br>to build your flowchart here</div>';
+    document.getElementById('placedCount').textContent = '0';
+    return;
+  }
+  
+  area.innerHTML = '';
+  state.placed.forEach((idx, i) => {
+    const step = ex.steps[idx];
+    const node = document.createElement('div');
+    node.className = 'fc-anim-in';
+    node.style.animationDelay = (i * 0.04) + 's';
+    node.innerHTML = shapeSVG(step.type, step.text, { width: 240, height: 64 });
+    area.appendChild(node);
+    
+    if (i < state.placed.length - 1) {
+      const conn = document.createElement('div');
+      conn.className = 'fc-connector';
+      area.appendChild(conn);
+    }
+  });
+  
+  document.getElementById('placedCount').textContent = state.placed.length;
+}
+
+function placeStep(idx) {
+  const ex = EXERCISES[state.current];
+  if (state.placed.includes(idx)) return;
+  if (state.placed.length >= ex.steps.length) return;
+  if (state.flowCorrect) return;
+  
+  state.placed.push(idx);
+  state.hintActive = false;
+  renderPalette();
+  renderBuild();
+  updateBuildControls();
+}
+
+function undoPlacement() {
+  if (state.placed.length === 0) return;
+  if (state.flowCorrect) return;
+  state.placed.pop();
+  state.hintActive = false;
+  state.flowChecked = false;
+  renderPalette();
+  renderBuild();
+  updateBuildControls();
+  document.getElementById('feedbackArea').innerHTML = '';
+}
+
+function showHint() {
+  const ex = EXERCISES[state.current];
+  if (state.placed.length >= ex.steps.length) return;
+  if (state.flowCorrect) return;
+  
+  state.hintActive = true;
+  renderPalette();
+  showToast('Hint activated', 'The highlighted step should come next.', 'info');
+}
+
+function resetBuild() {
+  if (state.flowCorrect) return;
+  state.placed = [];
+  state.hintActive = false;
+  state.flowChecked = false;
+  // reshuffle
+  const ex = EXERCISES[state.current];
+  state.shuffled = shuffleArray(ex.steps.map((_, i) => i));
+  if (state.shuffled[0] === 0) {
+    [state.shuffled[0], state.shuffled[1]] = [state.shuffled[1], state.shuffled[0]];
+  }
+  renderPalette();
+  renderBuild();
+  updateBuildControls();
+  document.getElementById('feedbackArea').innerHTML = '';
+}
+
+function updateBuildControls() {
+  const ex = EXERCISES[state.current];
+  const allPlaced = state.placed.length === ex.steps.length;
+  document.getElementById('checkBtn').disabled = !allPlaced || state.flowCorrect;
+  document.getElementById('undoBtn').disabled = state.placed.length === 0 || state.flowCorrect;
+  document.getElementById('hintBtn').disabled = allPlaced || state.flowCorrect;
+}
+
+function checkSolution() {
+  const ex = EXERCISES[state.current];
+  if (state.placed.length !== ex.steps.length) return;
+  
+  state.flowChecked = true;
+  let correct = 0;
+  const results = state.placed.map((idx, i) => {
+    const isCorrect = idx === i;
+    if (isCorrect) correct++;
+    return { idx, isCorrect, expected: i };
+  });
+  
+  const feedback = document.getElementById('feedbackArea');
+  
+  if (correct === ex.steps.length) {
+    state.flowCorrect = true;
+    const wasFirstTime = !state.completed.has(ex.id);
+    state.completed.add(ex.id);
+    renderTabs();
+    
+    feedback.innerHTML = `
+      <div class="p-5 rounded-lg bg-[rgba(74,222,128,0.08)] border border-[var(--green)]">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="w-9 h-9 rounded-full bg-[var(--green)] flex items-center justify-center flex-shrink-0">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--bg)" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+          </div>
+          <div>
+            <div class="font-display font-bold text-[var(--green)] text-lg">Flowchart complete!</div>
+            <div class="text-sm text-[var(--fg-dim)]">All ${ex.steps.length} steps are in the correct order.</div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    renderSolution();
+    launchConfetti();
+    
+    if (wasFirstTime) {
+      setTimeout(() => {
+        if (state.completed.size === EXERCISES.length) {
+          showToast('All exercises solved!', 'Outstanding work — you\'ve mastered flowchart construction.', 'success');
+          setTimeout(() => document.getElementById('allComplete').classList.remove('hidden'), 1200);
+        } else {
+          showToast(`Exercise ${ex.id} solved!`, `${state.completed.size} of ${EXERCISES.length} complete. Try the next one.`, 'success');
+        }
+      }, 500);
+    }
+    
+    updateBuildControls();
+  } else {
+    feedback.innerHTML = `
+      <div class="p-5 rounded-lg bg-[rgba(248,113,113,0.08)] border border-[var(--red)]">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-9 h-9 rounded-full bg-[var(--red)] flex items-center justify-center flex-shrink-0">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--bg)" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </div>
+          <div>
+            <div class="font-display font-bold text-[var(--red)] text-lg">${correct} of ${ex.steps.length} steps in the right place</div>
+            <div class="text-sm text-[var(--fg-dim)]">Review the order below. Use Undo to fix mistakes, or Clear to start over.</div>
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          ${results.map((r, i) => `
+            <div class="flex items-center gap-2 text-xs font-mono py-1">
+              ${r.isCorrect 
+                ? '<div class="check-mark"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--bg)" stroke-width="4"><path d="M20 6L9 17l-5-5"/></svg></div>'
+                : '<div class="cross-mark"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--bg)" stroke-width="4"><path d="M18 6L6 18M6 6l12 12"/></svg></div>'
+              }
+              <span class="text-[var(--muted)] w-8">Step ${i+1}:</span>
+              <span class="${r.isCorrect ? 'text-[var(--green)]' : 'text-[var(--red)]'} flex-1 truncate">${escapeHTML(ex.steps[r.idx].text)}</span>
+              ${!r.isCorrect ? `<span class="text-[var(--muted)]">→ expected:</span><span class="text-[var(--green)] truncate">${escapeHTML(ex.steps[r.expected].text)}</span>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+    showToast('Not quite right', `${correct} of ${ex.steps.length} correct. Check the feedback below.`, 'error');
+  }
+}
+
+/* ============================================================
+   SOLUTION VIEW
+   ============================================================ */
+function renderSolution() {
+  const ex = EXERCISES[state.current];
+  const area = document.getElementById('solutionArea');
+  area.classList.remove('hidden');
+  
+  // Build IPO summary
+  const inputs = ex.ipoItems.filter(i => i.type === 'input').map(i => i.text);
+  const processes = ex.ipoItems.filter(i => i.type === 'process').map(i => i.text);
+  const outputs = ex.ipoItems.filter(i => i.type === 'output').map(i => i.text);
+  
+  area.innerHTML = `
+    <div class="card p-6 md:p-8 glow-card">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-10 h-10 rounded-lg bg-[var(--green)] flex items-center justify-center flex-shrink-0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--bg)" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <div>
+          <div class="font-mono text-xs text-[var(--green)] uppercase tracking-wider">Solution verified</div>
+          <h3 class="font-display font-bold text-xl">Exercise ${ex.id}: ${ex.title}</h3>
+        </div>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-6">
+        <!-- Flowchart -->
+        <div>
+          <div class="font-mono text-xs text-[var(--accent-2)] uppercase tracking-wider mb-3">Completed flowchart</div>
+          <div class="rounded-lg bg-[var(--bg-2)] border border-[var(--border)] p-5 flex flex-col items-center">
+            ${ex.steps.map((step, i) => `
+              <div class="fc-anim-in" style="animation-delay: ${i * 0.08}s">
+                ${shapeSVG(step.type, step.text, { width: 240, height: 64 })}
+              </div>
+              ${i < ex.steps.length - 1 ? '<div class="fc-connector"></div>' : ''}
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- IPO summary + Python -->
+        <div class="space-y-4">
+          <div>
+            <div class="font-mono text-xs text-[var(--accent-2)] uppercase tracking-wider mb-3">Input · Process · Output</div>
+            <div class="space-y-2">
+              <div class="p-3 rounded-lg bg-[var(--bg-2)] border-l-2 border-[var(--cyan)]">
+                <div class="font-mono text-[10px] text-[var(--cyan)] uppercase mb-1">Input</div>
+                <div class="font-mono text-xs text-[var(--fg-dim)]">${inputs.join(', ')}</div>
+              </div>
+              <div class="p-3 rounded-lg bg-[var(--bg-2)] border-l-2 border-[var(--accent)]">
+                <div class="font-mono text-[10px] text-[var(--accent-2)] uppercase mb-1">Process</div>
+                <div class="font-mono text-xs text-[var(--fg-dim)]">${processes.join(' → ')}</div>
+              </div>
+              <div class="p-3 rounded-lg bg-[var(--bg-2)] border-l-2 border-[var(--green)]">
+                <div class="font-mono text-[10px] text-[var(--green)] uppercase mb-1">Output</div>
+                <div class="font-mono text-xs text-[var(--fg-dim)]">${outputs.join(', ')}</div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="font-mono text-xs text-[var(--accent-2)] uppercase tracking-wider mb-2">Equivalent Python</div>
+            <pre class="code-block">${escapeHTML(ex.python)}</pre>
+          </div>
+        </div>
+      </div>
+
+      ${state.current < EXERCISES.length - 1 ? `
+        <div class="mt-6 pt-6 border-t border-[var(--border)] flex justify-end">
+          <button class="btn-primary" onclick="selectExercise(${state.current + 1})">
+            Exercise ${state.current + 2}: ${EXERCISES[state.current + 1].title}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+      ` : `
+        <div class="mt-6 pt-6 border-t border-[var(--border)] flex justify-between items-center">
+          <div class="text-sm text-[var(--fg-dim)]">🎉 That's the last exercise. You're done!</div>
+          <button class="btn-primary" onclick="document.getElementById('allComplete').classList.remove('hidden')">
+            View Summary
+          </button>
+        </div>
+      `}
+    </div>
+  `;
+  
+  // Scroll to solution
+  setTimeout(() => area.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+}
+
+/* ============================================================
+   CONFETTI
+   ============================================================ */
+function launchConfetti() {
+  const colors = ['#ff8a3d', '#ffb547', '#4cc9f0', '#4ade80', '#fbbf24'];
+  for (let i = 0; i < 35; i++) {
+    const c = document.createElement('div');
+    c.style.cssText = `
+      position: fixed; width: 8px; height: 8px;
+      background: ${colors[Math.floor(Math.random() * colors.length)]};
+      left: ${50 + (Math.random() - 0.5) * 25}%;
+      top: 55%;
+      z-index: 9999; pointer-events: none;
+      border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+      animation: confetti-fall ${1 + Math.random() * 0.8}s ease-out forwards;
+      animation-delay: ${Math.random() * 0.4}s;
+    `;
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 2200);
+  }
+}
+
+/* ============================================================
+   SCROLL REVEAL
+   ============================================================ */
+function initReveal() {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function init() {
+  renderTabs();
+  renderExercise();
+  initReveal();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

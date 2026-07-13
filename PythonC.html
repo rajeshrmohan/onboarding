@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PY//LAB — Interactive Python Learning Environment</title>
+
+<!-- ============================================================
+     EXTERNAL LIBRARIES (all loaded via CDN — no backend required)
+     - CodeMirror 5 : Python syntax highlighting / editor
+     - Mermaid      : text-to-flowchart rendering
+     - Pyodide      : CPython compiled to WebAssembly (client-side)
+     ============================================================ -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+/* ================================================================
+   DESIGN TOKENS — futuristic UI (FUI)
+   ================================================================ */
+:root{
+  --bg:            #0b0f19;   /* deep dark navy base            */
+  --bg-panel:      rgba(13, 20, 36, .82);
+  --grid-line:     rgba(60, 130, 210, .07);
+  --cyan:          #22d3ee;   /* primary neon accent            */
+  --cyan-dim:      rgba(34, 211, 238, .35);
+  --cyan-faint:    rgba(34, 211, 238, .12);
+  --blue:          #3b82f6;
+  --text:          #dbe7f4;   /* high-legibility body text      */
+  --text-dim:      #7e93ad;
+  --red:           #fb4d5c;   /* error accent                   */
+  --red-dim:       rgba(251, 77, 92, .35);
+  --red-faint:     rgba(251, 77, 92, .08);
+  --green:         #34d399;
+  --amber:         #fbbf24;
+  --font-ui:       'Chakra Petch', sans-serif;
+  --font-mono:     'JetBrains Mono', monospace;
+  --radius:        6px;
+}
+
+*{ box-sizing:border-box; margin:0; padding:0; }
+
+html,body{ height:100%; overflow:hidden; }
+
+body{
+  background-color:var(--bg);
+  background-image:
+    radial-gradient(ellipse 60% 40% at 50% -5%, rgba(34,211,238,.06), transparent 70%),
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size:100% 100%, 42px 42px, 42px 42px;
+  color:var(--text);
+  font-family:var(--font-ui);
+}
+
+/* ================================================================
+   APP SHELL — CSS Grid, exactly 100vw x 100vh
+   ================================================================ */
+.app{
+  display:grid;
+  width:100vw; height:100vh;
+  padding:12px; gap:12px;
+  grid-template-rows:52px 2.4fr 1fr;   /* top panes tall, console/errors short */
+  grid-template-columns:1.05fr 1fr;
+  grid-template-areas:
+    "header  header"
+    "flow    editor"
+    "console errors";
+}
+header  { grid-area:header; }
+#pane-flow    { grid-area:flow; }
+#pane-editor  { grid-area:editor; }
+#pane-console { grid-area:console; }
+#pane-errors  { grid-area:errors; }
+
+@media (max-width: 900px){
+  html,body{ overflow:auto; }
+  .app{
+    height:auto; min-height:100vh;
+    grid-template-columns:1fr;
+    grid-template-rows:auto 500px 480px 220px 180px;
+    grid-template-areas:"header" "flow" "editor" "console" "errors";
+  }
+}
+
+/* ================================================================
+   HEADER / COMMAND BAR
+   ================================================================ */
+header{
+  display:flex; align-items:center; gap:12px;
+  padding:0 16px;
+  background:var(--bg-panel);
+  border:1px solid var(--cyan-dim);
+  border-radius:var(--radius);
+  box-shadow:0 0 18px -6px var(--cyan-dim), inset 0 0 24px -18px var(--cyan);
+  overflow-x:auto;
+}
+.brand{
+  font-weight:700; font-size:1.05rem; letter-spacing:.22em;
+  color:var(--cyan);
+  text-shadow:0 0 12px var(--cyan-dim);
+  white-space:nowrap;
+}
+.brand small{ color:var(--text-dim); letter-spacing:.14em; font-weight:500; }
+
+.credit{
+  font-size:.6rem; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--text-dim); white-space:nowrap;
+  border-left:1px solid rgba(34,211,238,.25); padding-left:12px;
+  user-select:none;
+}
+@media (max-width:1250px){ .credit{ display:none; } }
+
+.status{
+  display:flex; align-items:center; gap:8px;
+  font-size:.72rem; letter-spacing:.14em; color:var(--text-dim);
+  text-transform:uppercase; white-space:nowrap;
+}
+.status .dot{
+  width:9px; height:9px; border-radius:50%;
+  background:var(--amber); box-shadow:0 0 8px var(--amber);
+  animation:pulse 1.2s ease-in-out infinite;
+}
+.status.ready .dot{ background:var(--green); box-shadow:0 0 8px var(--green); animation:none; }
+.status.running .dot{ background:var(--cyan); box-shadow:0 0 10px var(--cyan); animation:pulse .7s ease-in-out infinite; }
+@keyframes pulse{ 50%{ opacity:.35; } }
+@media (prefers-reduced-motion: reduce){ .status .dot{ animation:none; } }
+
+.spacer{ flex:1; }
+
+select, button{
+  font-family:var(--font-ui); font-size:.78rem; letter-spacing:.1em;
+  text-transform:uppercase; cursor:pointer;
+  color:var(--text);
+  background:rgba(34,211,238,.06);
+  border:1px solid var(--cyan-dim);
+  border-radius:var(--radius);
+  padding:8px 14px;
+  white-space:nowrap;
+  transition:box-shadow .15s, background .15s, transform .05s;
+}
+select:hover, button:hover{ background:var(--cyan-faint); box-shadow:0 0 12px -2px var(--cyan-dim); }
+select:focus-visible, button:focus-visible, textarea:focus-visible{
+  outline:2px solid var(--cyan); outline-offset:2px;
+}
+button:active{ transform:translateY(1px); }
+button:disabled{ opacity:.4; cursor:not-allowed; box-shadow:none; }
+
+#btn-run{
+  color:#04141a; font-weight:700;
+  background:linear-gradient(180deg, #67e8f9, var(--cyan));
+  border-color:var(--cyan);
+  box-shadow:0 0 16px -2px var(--cyan-dim);
+}
+#btn-run:hover{ box-shadow:0 0 22px 0 var(--cyan-dim); background:linear-gradient(180deg,#8df0fc,#3ddcf5); }
+
+select{ background-color:#0d1424; }
+select option{ background:#0d1424; color:var(--text); }
+
+/* ================================================================
+   PANES — shared chrome with FUI corner brackets
+   ================================================================ */
+.pane{
+  position:relative; display:flex; flex-direction:column;
+  min-height:0; min-width:0;
+  background:var(--bg-panel);
+  border:1px solid var(--cyan-dim);
+  border-radius:var(--radius);
+  box-shadow:0 0 18px -8px var(--cyan-dim);
+  overflow:hidden;
+}
+.pane::before, .pane::after{
+  content:""; position:absolute; width:16px; height:16px; pointer-events:none; z-index:3;
+}
+.pane::before{ top:-1px; left:-1px; border-top:2px solid var(--cyan); border-left:2px solid var(--cyan); }
+.pane::after { bottom:-1px; right:-1px; border-bottom:2px solid var(--cyan); border-right:2px solid var(--cyan); }
+
+.pane-head{
+  display:flex; align-items:center; gap:10px;
+  padding:8px 14px;
+  font-size:.72rem; font-weight:600; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--cyan);
+  border-bottom:1px solid rgba(34,211,238,.18);
+  background:linear-gradient(90deg, var(--cyan-faint), transparent 60%);
+  flex:0 0 auto;
+}
+.pane-head .tag{
+  font-size:.62rem; color:var(--text-dim); letter-spacing:.12em;
+  border:1px solid rgba(126,147,173,.35); border-radius:3px; padding:1px 6px;
+}
+.pane-head .mini-btn{
+  margin-left:auto; padding:3px 10px; font-size:.62rem;
+}
+.pane-body{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
+
+/* ---- Pane 1 · Flowchart planner: shape palette + split view ---- */
+#shape-bar{
+  display:flex; flex-wrap:wrap; gap:6px;
+  padding:8px 10px;
+  border-bottom:1px solid rgba(34,211,238,.15);
+  background:rgba(5,9,18,.4);
+  flex:0 0 auto;
+}
+#shape-bar button{
+  padding:5px 10px; font-size:.66rem; letter-spacing:.08em;
+}
+#shape-bar .glyph{ color:var(--cyan); margin-right:5px; font-size:.8rem; }
+#shape-bar button[data-shape="decision"] .glyph{ color:var(--amber); }
+#shape-bar button[data-shape="link"]{ border-style:dashed; }
+
+#flow-split{ flex:1; min-height:0; display:flex; }
+#flow-src{
+  width:38%; min-width:150px; resize:none; border:none; border-right:1px solid rgba(34,211,238,.15);
+  background:rgba(5,9,18,.6); color:var(--text);
+  font-family:var(--font-mono); font-size:.76rem; line-height:1.55;
+  padding:12px; outline-offset:-2px;
+}
+#flow-render{
+  flex:1; overflow:auto; padding:10px; position:relative;
+  /* block layout (not flex-centred) so zoomed-in charts can scroll
+     to every edge without the left side being clipped */
+  display:block;
+}
+#flow-render svg{ max-width:100%; height:auto; display:block; margin:0 auto; }
+
+/* zoom cluster on the right of the shape bar */
+#shape-bar .bar-spacer{ flex:1; }
+#shape-bar .zoom-btn{ min-width:34px; text-align:center; padding:5px 8px; }
+#zoom-level{
+  min-width:52px; text-align:center;
+  font-family:var(--font-mono); font-size:.66rem; letter-spacing:.05em;
+  color:var(--cyan);
+}
+#flow-hint{
+  position:absolute; bottom:8px; right:12px; z-index:2;
+  font-size:.62rem; letter-spacing:.1em; color:var(--text-dim);
+}
+#flow-error{
+  display:none; padding:8px 14px; font-family:var(--font-mono); font-size:.7rem;
+  color:var(--amber); border-top:1px dashed rgba(251,191,36,.4); flex:0 0 auto;
+}
+
+/* ---- Pane 2 · Editor with file tabs ---- */
+#file-tabs{
+  display:flex; align-items:stretch; gap:4px;
+  padding:6px 8px 0;
+  background:rgba(5,9,18,.4);
+  border-bottom:1px solid rgba(34,211,238,.15);
+  overflow-x:auto; flex:0 0 auto;
+}
+.file-tab{
+  display:flex; align-items:center; gap:8px;
+  padding:6px 10px 7px 12px;
+  font-family:var(--font-mono); font-size:.72rem;
+  color:var(--text-dim); cursor:pointer; user-select:none;
+  background:rgba(13,20,36,.5);
+  border:1px solid rgba(34,211,238,.15); border-bottom:none;
+  border-radius:5px 5px 0 0;
+  white-space:nowrap;
+  transition:color .15s, background .15s;
+}
+.file-tab:hover{ color:var(--text); }
+.file-tab.active{
+  color:var(--cyan);
+  background:rgba(34,211,238,.1);
+  border-color:var(--cyan-dim);
+  box-shadow:0 -1px 10px -4px var(--cyan-dim);
+  text-shadow:0 0 8px var(--cyan-dim);
+}
+.file-tab .close{
+  font-family:var(--font-ui); font-size:.85rem; line-height:1;
+  color:var(--text-dim); border:none; background:none; padding:0 2px;
+}
+.file-tab .close:hover{ color:var(--red); box-shadow:none; }
+#btn-newfile{
+  align-self:center;
+  padding:4px 10px; font-size:.7rem; margin-left:2px; margin-bottom:5px;
+  border-style:dashed;
+}
+#pane-editor .pane-body{ overflow:hidden; }
+
+/* ---- CodeMirror FUI theme overrides ---- */
+.CodeMirror{
+  height:100%; flex:1;
+  background:rgba(5,9,18,.6); color:var(--text);
+  font-family:var(--font-mono); font-size:.85rem; line-height:1.6;
+}
+.CodeMirror-gutters{ background:rgba(5,9,18,.85); border-right:1px solid rgba(34,211,238,.18); }
+.CodeMirror-linenumber{ color:#3c4f66; }
+.CodeMirror-cursor{ border-left:2px solid var(--cyan); }
+.CodeMirror-selected{ background:rgba(34,211,238,.15) !important; }
+.cm-s-default .cm-keyword { color:#7dd3fc; }
+.cm-s-default .cm-def     { color:#93c5fd; }
+.cm-s-default .cm-variable{ color:var(--text); }
+.cm-s-default .cm-builtin { color:#67e8f9; }
+.cm-s-default .cm-string  { color:#86efac; }
+.cm-s-default .cm-number  { color:#fbbf24; }
+.cm-s-default .cm-comment { color:#5b7089; font-style:italic; }
+.cm-s-default .cm-operator{ color:#c4b5fd; }
+.CodeMirror-matchingbracket{ color:var(--cyan) !important; text-shadow:0 0 6px var(--cyan-dim); }
+
+/* ---- Pane 3 · Console / Pane 4 · Errors ---- */
+#console-out, #error-out{
+  flex:1; overflow:auto; padding:12px 14px;
+  font-family:var(--font-mono); font-size:.8rem; line-height:1.6;
+  white-space:pre-wrap; word-break:break-word;
+  background:rgba(5,9,18,.6);
+}
+#console-out .run-sep{ color:var(--cyan); opacity:.75; }
+#console-out .sys{ color:var(--text-dim); font-style:italic; }
+#console-out .empty, #error-out .empty{ color:var(--text-dim); font-style:italic; }
+
+#pane-errors{
+  border-color:var(--red-dim);
+  box-shadow:0 0 20px -8px var(--red-dim);
+}
+#pane-errors::before{ border-color:var(--red); }
+#pane-errors::after { border-color:var(--red); }
+#pane-errors .pane-head{
+  color:var(--red);
+  border-bottom-color:rgba(251,77,92,.25);
+  background:linear-gradient(90deg, var(--red-faint), transparent 60%);
+}
+#pane-errors .mini-btn{ border-color:var(--red-dim); color:var(--text); }
+#pane-errors .mini-btn:hover{ background:var(--red-faint); box-shadow:0 0 10px -2px var(--red-dim); }
+#error-out{ color:#ffb3ba; }
+#error-out .err-time{ color:var(--red); font-weight:700; }
+
+::-webkit-scrollbar{ width:9px; height:9px; }
+::-webkit-scrollbar-track{ background:transparent; }
+::-webkit-scrollbar-thumb{ background:rgba(34,211,238,.25); border-radius:5px; }
+::-webkit-scrollbar-thumb:hover{ background:rgba(34,211,238,.45); }
+</style>
+</head>
+
+<body>
+<div class="app">
+
+  <!-- ============ COMMAND BAR ============ -->
+  <header>
+    <div class="brand">PY//LAB <small>· PYTHON LEARNING ENVIRONMENT</small></div>
+    <div class="credit" id="app-credit" aria-label="Application credit"></div>
+    <div class="status" id="status"><span class="dot"></span><span id="status-text">Booting Python runtime…</span></div>
+    <div class="spacer"></div>
+
+    <label for="template-select" style="font-size:.68rem;letter-spacing:.14em;color:var(--text-dim);">TEMPLATE</label>
+    <select id="template-select" aria-label="Load a starter template into the current file">
+      <option value="" selected>— choose —</option>
+      <option value="hello">Hello World</option>
+      <option value="loop">Simple Loop</option>
+      <option value="ifelse">If / Else Logic</option>
+    </select>
+
+    <button id="btn-run" disabled>▶ Run Code</button>
+    <button id="btn-clear">Clear Console</button>
+    <button id="btn-reset">Reset File</button>
+    <button id="btn-download">⤓ Download .py</button>
+  </header>
+
+  <!-- ============ PANE 1 · FLOWCHART PLANNER ============ -->
+  <section class="pane" id="pane-flow" aria-label="Flowchart planner">
+    <div class="pane-head">01 · Flowchart Planner <span class="tag">MERMAID</span>
+      <span class="tag" id="flow-file-tag">—</span>
+      <button class="mini-btn" id="btn-save-image" title="Save the flowchart as a PNG image">⤓ Save PNG</button>
+    </div>
+    <div class="pane-body">
+      <!-- Shape palette: standard flowchart symbols. Each button asks for a
+           label, inserts the correct Mermaid syntax, and auto-connects the
+           new shape to the previously inserted one. -->
+      <div id="shape-bar" role="toolbar" aria-label="Flowchart shapes">
+        <button data-shape="start"    title="Terminator (rounded)"><span class="glyph">⬭</span>Start</button>
+        <button data-shape="input"    title="Input (parallelogram)"><span class="glyph">▱</span>Input</button>
+        <button data-shape="process"  title="Process (rectangle)"><span class="glyph">▭</span>Process</button>
+        <button data-shape="decision" title="Decision (diamond)"><span class="glyph">◇</span>Decision</button>
+        <button data-shape="output"   title="Output (parallelogram)"><span class="glyph">▱</span>Output</button>
+        <button data-shape="end"      title="Terminator (rounded)"><span class="glyph">⬭</span>End</button>
+        <button data-shape="link"     title="Connect two shapes by their IDs"><span class="glyph">→</span>Link</button>
+
+        <span class="bar-spacer"></span>
+
+        <!-- Zoom controls: scale the rendered diagram (Ctrl + scroll also works) -->
+        <button class="zoom-btn" id="btn-zoom-out" title="Zoom out">−</button>
+        <button class="zoom-btn" id="zoom-level"  title="Click to set 100%">FIT</button>
+        <button class="zoom-btn" id="btn-zoom-in"  title="Zoom in">+</button>
+        <button class="zoom-btn" id="btn-zoom-fit" title="Fit diagram to pane">Fit</button>
+      </div>
+      <div id="flow-split">
+        <textarea id="flow-src" spellcheck="false" aria-label="Flowchart source text"></textarea>
+        <div id="flow-render" role="img" aria-label="Rendered flowchart">
+          <span id="flow-hint">use the shape buttons or type Mermaid text · updates live</span>
+        </div>
+      </div>
+    </div>
+    <div id="flow-error"></div>
+  </section>
+
+  <!-- ============ PANE 2 · CODE EDITOR + FILE TABS ============ -->
+  <section class="pane" id="pane-editor" aria-label="Python code editor">
+    <div class="pane-head">02 · Python Code Editor <span class="tag">CODEMIRROR</span></div>
+    <div id="file-tabs" role="tablist" aria-label="Open Python files"></div>
+    <div class="pane-body"><textarea id="code-src"></textarea></div>
+  </section>
+
+  <!-- ============ PANE 3 · CONSOLE OUTPUT ============ -->
+  <section class="pane" id="pane-console" aria-label="Console output">
+    <div class="pane-head">03 · Console Output <span class="tag">STDOUT</span>
+      <button class="mini-btn" id="btn-clear-2">Clear</button>
+    </div>
+    <div class="pane-body"><div id="console-out"><span class="empty">Standard output will appear here after you press Run Code.</span></div></div>
+  </section>
+
+  <!-- ============ PANE 4 · ERROR LOGS ============ -->
+  <section class="pane" id="pane-errors" aria-label="Error logs">
+    <div class="pane-head">04 · Error Logs <span class="tag">STDERR / EXCEPTIONS</span>
+      <button class="mini-btn" id="btn-clear-errors">Clear</button>
+    </div>
+    <div class="pane-body"><div id="error-out"><span class="empty">No errors detected. Runtime and syntax errors will be routed here — not to the console.</span></div></div>
+  </section>
+
+</div>
+
+<script>
+/* ====================================================================
+   PY//LAB v2 — application logic (vanilla JS, no backend)
+
+   WHAT'S IN THIS FILE
+   -------------------
+   §1  Project / multi-file system  — create, rename, switch, close,
+       download .py files. Every file carries its OWN flowchart, so a
+       new project starts with a fresh diagram.
+   §2  Flowchart shape palette      — Input / Process / Output /
+       Decision / Start / End buttons that generate correct Mermaid
+       syntax and auto-chain the flow, plus a Link tool for branches.
+   §3  Python execution (Pyodide)   — stdout → Console pane,
+       stderr + exceptions → Error Logs pane (see runCode()).
+   ==================================================================== */
+
+/* ====================================================================
+   APPLICATION SIGNATURE — integrity-protected developer credit
+   --------------------------------------------------------------------
+   The credit never appears as plain text anywhere in this file. It is
+   stored as three Base64-encoded fragments (_SIG_F) and validated at
+   startup — and again on every code run — against a djb2 checksum
+   (_SIG_H) computed from the ORIGINAL text. Tampering with the
+   fragments, the checksum, or the verification code paths causes
+   verifySignature() to fail and lockApp() disables the entire tool.
+   A MutationObserver additionally restores the on-screen credit if it
+   is edited live through browser dev-tools.
+   ==================================================================== */
+const _SIG_F = ["RGV2ZWxvcGVkIGJ5IA==", "UmFqZXNoIFIgTW9oYW4=", "IGZvciBJVEUgQ1c="];
+const _SIG_H = 3332075197;
+
+function _sigText(){
+  try{ return _SIG_F.map(f => atob(f)).join(""); }catch(e){ return ""; }
+}
+function _sigHash(s){
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h * 33) + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+function verifySignature(){
+  return _sigHash(_sigText()) === _SIG_H;
+}
+function lockApp(){
+  document.body.innerHTML =
+    '<div style="height:100vh;display:flex;align-items:center;justify-content:center;' +
+    'font-family:monospace;color:#fb4d5c;background:#0b0f19;text-align:center;padding:20px;">' +
+    '⛔ INTEGRITY CHECK FAILED<br><br>The application signature has been modified.<br>' +
+    'Restore the original file to continue.</div>';
+  throw new Error("signature integrity failure");
+}
+
+/* ------------------------- Starter templates ------------------------ */
+const TEMPLATES = {
+  hello: {
+    code:
+`# Hello World — your first Python program
+# print() sends text to the Console Output pane.
+
+message = "Hello, World!"
+print(message)
+print("Welcome to PY//LAB 🚀")`,
+    flow:
+`flowchart TD
+    S1([Start]) --> P1[/"Set message = 'Hello, World!'"/]
+    P1 --> O1[\\"print(message)"\\]
+    O1 --> E1([End])`
+  },
+  loop: {
+    code:
+`# Simple Loop — repeat an action with for + range()
+# range(1, 6) produces the numbers 1, 2, 3, 4, 5.
+
+total = 0
+for i in range(1, 6):
+    print("Loop pass number:", i)
+    total = total + i
+
+print("Sum of 1 to 5 =", total)`,
+    flow:
+`flowchart TD
+    S1([Start]) --> P1["total = 0"]
+    P1 --> D1{"more numbers<br>in range 1..5?"}
+    D1 -- yes --> O1[\\"print pass number"\\]
+    O1 --> P2["total = total + i"]
+    P2 --> D1
+    D1 -- no --> O2[\\"print total"\\]
+    O2 --> E1([End])`
+  },
+  ifelse: {
+    code:
+`# If / Else Logic — make decisions in code
+# Change the value of score and run again to test each branch.
+
+score = 74
+
+if score >= 80:
+    print("Grade: A — Excellent work!")
+elif score >= 60:
+    print("Grade: B — Good effort.")
+else:
+    print("Grade: C — Keep practising!")
+
+print("Program finished.")`,
+    flow:
+`flowchart TD
+    S1([Start]) --> P1["score = 74"]
+    P1 --> D1{"score >= 80?"}
+    D1 -- yes --> O1[\\"print Grade A"\\]
+    D1 -- no --> D2{"score >= 60?"}
+    D2 -- yes --> O2[\\"print Grade B"\\]
+    D2 -- no --> O3[\\"print Grade C"\\]
+    O1 --> E1([End])
+    O2 --> E1
+    O3 --> E1`
+  }
+};
+
+const NEW_FILE_CODE =
+`# New project — plan your logic in the Flowchart Planner first,
+# then write the matching Python code here.
+
+`;
+const NEW_FILE_FLOW = `flowchart TD\n`;
+
+/* --------------------------- DOM handles ---------------------------- */
+const $ = id => document.getElementById(id);
+const consoleOut = $("console-out");
+const errorOut   = $("error-out");
+const statusEl   = $("status");
+const statusText = $("status-text");
+const flowSrc    = $("flow-src");
+const flowRender = $("flow-render");
+const flowErrorB = $("flow-error");
+const flowTag    = $("flow-file-tag");
+const tabsBar    = $("file-tabs");
+const runBtn     = $("btn-run");
+
+/* ---------------------- Pane output helpers ------------------------- */
+function clearNode(node, placeholder){
+  node.innerHTML = "";
+  if (placeholder){
+    const s = document.createElement("span");
+    s.className = "empty";
+    s.textContent = placeholder;
+    node.appendChild(s);
+  }
+}
+function removePlaceholder(node){
+  const p = node.querySelector(".empty");
+  if (p) p.remove();
+}
+/* Append plain text safely (textContent — never innerHTML for user data) */
+function appendText(node, text, cssClass){
+  removePlaceholder(node);
+  const span = document.createElement("span");
+  if (cssClass) span.className = cssClass;
+  span.textContent = text;
+  node.appendChild(span);
+  node.scrollTop = node.scrollHeight;
+}
+function setStatus(mode, text){
+  statusEl.classList.remove("ready", "running");
+  if (mode) statusEl.classList.add(mode);
+  statusText.textContent = text;
+}
+
+/* ==================== EDITOR (CodeMirror) ============================ */
+const editor = CodeMirror.fromTextArea($("code-src"), {
+  mode: "python",
+  lineNumbers: true,
+  indentUnit: 4,
+  smartIndent: true,
+  matchBrackets: true,
+  viewportMargin: Infinity
+});
+
+/* ====================================================================
+   §1 · PROJECT / MULTI-FILE SYSTEM
+   --------------------------------------------------------------------
+   Each file is an object { name, code, flow } kept in a Map. The editor
+   and the flowchart textarea are just "views" of the active file: their
+   contents are written back into the Map (saveActive) before any switch,
+   run, or download, so nothing is ever lost when changing tabs.
+   Files live in memory for the session — students keep permanent copies
+   with the Download button.
+   ==================================================================== */
+const files = new Map();
+let activeId = null;
+let fileSeq  = 0;
+
+function ensurePyName(name){
+  name = (name || "").trim().replace(/[\\/:*?"<>|]/g, "_");
+  if (!name) return null;
+  if (!name.toLowerCase().endsWith(".py")) name += ".py";
+  return name;
+}
+function nameExists(name){
+  for (const f of files.values()) if (f.name === name) return true;
+  return false;
+}
+
+function createFile(name, code, flow, activate = true){
+  const id = "f" + (++fileSeq);
+  files.set(id, { name, code, flow });
+  if (activate) switchFile(id);
+  renderTabs();
+  return id;
+}
+
+/* Write the current editor + flowchart text back into the active file */
+function saveActive(){
+  if (!activeId || !files.has(activeId)) return;
+  const f = files.get(activeId);
+  f.code = editor.getValue();
+  f.flow = flowSrc.value;
+}
+
+function switchFile(id){
+  if (!files.has(id)) return;
+  saveActive();
+  activeId = id;
+  const f = files.get(id);
+  editor.setValue(f.code);
+  flowSrc.value = f.flow;
+  flowTag.textContent = f.name;
+  renderTabs();
+  renderFlow();
+  editor.focus();
+}
+
+function newFilePrompt(){
+  const suggested = "script" + (files.size + 1) + ".py";
+  let name = ensurePyName(prompt("Name for the new Python file:", suggested));
+  if (!name) return;
+  while (nameExists(name)){
+    name = ensurePyName(prompt(`"${name}" already exists. Choose another name:`, name.replace(/\.py$/i, "_2.py")));
+    if (!name) return;
+  }
+  createFile(name, NEW_FILE_CODE, NEW_FILE_FLOW);
+}
+
+function renameFile(id){
+  const f = files.get(id);
+  if (!f) return;
+  const name = ensurePyName(prompt("Rename file:", f.name));
+  if (!name || name === f.name) return;
+  if (nameExists(name)){ alert(`"${name}" already exists.`); return; }
+  f.name = name;
+  if (id === activeId) flowTag.textContent = name;
+  renderTabs();
+}
+
+function closeFile(id){
+  if (files.size === 1){ alert("At least one file must stay open."); return; }
+  const f = files.get(id);
+  if (!confirm(`Close "${f.name}"?\nIts code and flowchart will be discarded (download first if you want a copy).`)) return;
+  files.delete(id);
+  if (id === activeId){
+    activeId = null;                       // avoid saving into a deleted file
+    switchFile(files.keys().next().value); // activate the first remaining file
+  } else {
+    renderTabs();
+  }
+}
+
+/* Rebuild the tab strip (single-click = switch, double-click = rename) */
+function renderTabs(){
+  tabsBar.innerHTML = "";
+  for (const [id, f] of files){
+    const tab = document.createElement("div");
+    tab.className = "file-tab" + (id === activeId ? " active" : "");
+    tab.setAttribute("role", "tab");
+    tab.setAttribute("aria-selected", id === activeId ? "true" : "false");
+    tab.title = "Click to open · double-click to rename";
+
+    const label = document.createElement("span");
+    label.textContent = f.name;
+    tab.appendChild(label);
+
+    const close = document.createElement("button");
+    close.className = "close";
+    close.textContent = "×";
+    close.setAttribute("aria-label", "Close " + f.name);
+    close.addEventListener("click", e => { e.stopPropagation(); closeFile(id); });
+    tab.appendChild(close);
+
+    tab.addEventListener("click", () => switchFile(id));
+    tab.addEventListener("dblclick", () => renameFile(id));
+    tabsBar.appendChild(tab);
+  }
+  const add = document.createElement("button");
+  add.id = "btn-newfile";
+  add.textContent = "+ New File";
+  add.addEventListener("click", newFilePrompt);
+  tabsBar.appendChild(add);
+}
+
+/* ====================================================================
+   §2 · FLOWCHART PLANNER — Mermaid + shape palette
+   --------------------------------------------------------------------
+   The palette gives students the four classic flowchart symbols plus
+   terminators, mapped to Mermaid node syntax:
+
+     Start / End .... S1([Start])        rounded terminator
+     Input .......... I1[/"text"/]      parallelogram (lean right)
+     Process ........ P1["text"]        rectangle
+     Output ......... O1[\"text"\]      parallelogram (lean left)
+     Decision ....... D1{"text?"}       diamond
+
+   Each click: (1) asks for the label, (2) generates the next free ID
+   for that shape (I1, I2, P1, D1 …), (3) appends the node definition,
+   and (4) auto-draws an arrow from the previously added shape so a
+   straight sequence builds itself. Decision branches (yes/no) are made
+   with the Link tool, which asks From-ID, To-ID and an optional label.
+   ==================================================================== */
+const SHAPES = {
+  start:    { prefix:"S", ask:null,                                    make:(id,l)=>`${id}([${l||"Start"}])` },
+  end:      { prefix:"E", ask:null,                                    make:(id,l)=>`${id}([${l||"End"}])` },
+  input:    { prefix:"I", ask:"Input step — what is read in?\n(e.g. Read score from user)",   make:(id,l)=>`${id}[/"${l}"/]` },
+  process:  { prefix:"P", ask:"Process step — what happens?\n(e.g. total = total + i)",       make:(id,l)=>`${id}["${l}"]` },
+  output:   { prefix:"O", ask:"Output step — what is displayed?\n(e.g. Print the grade)",     make:(id,l)=>`${id}[\\"${l}"\\]` },
+  decision: { prefix:"D", ask:"Decision — yes/no question?\n(e.g. score >= 50?)",             make:(id,l)=>`${id}{"${l}"}` }
+};
+
+let lastNodeId = null;   // the shape most recently added via the palette
+
+/* Mermaid labels: keep them safe inside double quotes */
+function cleanLabel(text){
+  return text.replace(/"/g, "'").replace(/\n/g, " ").trim();
+}
+/* Find the next unused ID with this prefix by scanning the source */
+function nextId(prefix, src){
+  let n = 1;
+  while (new RegExp("\\b" + prefix + n + "\\b").test(src)) n++;
+  return prefix + n;
+}
+function ensureHeader(src){
+  return /^\s*(flowchart|graph)\s/m.test(src) ? src : "flowchart TD\n" + src;
+}
+function appendFlowLines(lines){
+  let src = ensureHeader(flowSrc.value);
+  if (src.length && !src.endsWith("\n")) src += "\n";
+  flowSrc.value = src + lines.map(l => "    " + l).join("\n") + "\n";
+  renderFlow();
+}
+
+function addShape(kind){
+  const shape = SHAPES[kind];
+  let label = "";
+  if (shape.ask !== null){
+    label = prompt(shape.ask);
+    if (label === null) return;            // student pressed Cancel
+    label = cleanLabel(label);
+    if (!label) return;
+  }
+  const id = nextId(shape.prefix, flowSrc.value);
+  const lines = [];
+
+  if (lastNodeId && new RegExp("\\b" + lastNodeId + "\\b").test(flowSrc.value)){
+    /* auto-chain: previous shape --> new shape */
+    lines.push(`${lastNodeId} --> ${shape.make(id, label)}`);
+  } else {
+    lines.push(shape.make(id, label));
+  }
+  appendFlowLines(lines);
+  lastNodeId = id;
+
+  if (kind === "decision"){
+    /* remind students how to attach the yes/no branches */
+    appendFlowLines([`%% use the Link button to add the yes / no branches from ${id}`]);
+  }
+}
+
+function addLink(){
+  const src = flowSrc.value;
+  const ids = [...new Set(src.match(/\b[SIPODE]\d+\b/g) || [])];
+  const hint = ids.length ? `\nShapes in this chart: ${ids.join(", ")}` : "";
+  const from = prompt("Link FROM which shape ID?" + hint);
+  if (!from) return;
+  const to = prompt("Link TO which shape ID?" + hint);
+  if (!to) return;
+  const label = prompt("Arrow label (e.g. yes / no) — leave blank for none:", "");
+  const arrow = label && label.trim()
+    ? `${from.trim()} -- ${cleanLabel(label)} --> ${to.trim()}`
+    : `${from.trim()} --> ${to.trim()}`;
+  appendFlowLines([arrow]);
+  lastNodeId = to.trim();
+}
+
+document.querySelectorAll("#shape-bar button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const kind = btn.dataset.shape;
+    if (kind === "link") addLink(); else addShape(kind);
+  });
+});
+
+/* ------------------------ Mermaid rendering ------------------------- */
+mermaid.initialize({
+  startOnLoad: false,
+  securityLevel: "strict",
+  theme: "base",
+  themeVariables: {
+    background: "#0b0f19",
+    primaryColor: "#0d1a2e",
+    primaryTextColor: "#dbe7f4",
+    primaryBorderColor: "#22d3ee",
+    lineColor: "#22d3ee",
+    secondaryColor: "#12233d",
+    tertiaryColor: "#0d1424",
+    fontFamily: "'JetBrains Mono', monospace",
+    fontSize: "13px"
+  }
+});
+
+let flowTimer = null;
+let flowSeq = 0;
+
+function scheduleFlowRender(){
+  clearTimeout(flowTimer);
+  flowTimer = setTimeout(renderFlow, 350);
+}
+
+/* Live render. Mermaid parse problems are shown as an inline amber
+   notice inside this pane — they are diagram issues, not Python errors,
+   so they deliberately do NOT go to the Error Logs pane. */
+async function renderFlow(){
+  const src = flowSrc.value.trim();
+  const empty = !src || /^flowchart\s+\w+\s*$/i.test(src);
+  if (empty){
+    flowRender.innerHTML = '<span id="flow-hint">use the shape buttons or type Mermaid text · updates live</span>';
+    flowErrorB.style.display = "none";
+    return;
+  }
+  const id = "flow-svg-" + (++flowSeq);
+  try{
+    const { svg } = await mermaid.render(id, src);
+    flowRender.innerHTML = svg;            // library-generated SVG (safe)
+    flowErrorB.style.display = "none";
+    applyZoom();                           // keep the chosen zoom level
+  }catch(err){
+    const orphan = document.getElementById("d" + id);   // Mermaid can leave
+    if (orphan) orphan.remove();                        // an orphan node
+    flowErrorB.textContent = "⚠ Diagram syntax: " + (err.message || err).toString().split("\n")[0];
+    flowErrorB.style.display = "block";
+  }
+}
+flowSrc.addEventListener("input", scheduleFlowRender);
+
+/* --------------------------- Zoom engine ----------------------------
+   HOW IT WORKS: Mermaid's SVG carries a viewBox, so scaling is done by
+   simply setting an explicit CSS width (natural width × zoom factor) —
+   the browser rescales the vector cleanly and #flow-render's overflow
+   scrollbars provide panning. flowZoom === null means "Fit" (default):
+   the SVG is capped at 100% of the pane width, exactly as before.    */
+let flowZoom = null;                       // null = fit, number = scale
+const ZOOM_MIN = 0.2, ZOOM_MAX = 5;
+
+function svgNaturalWidth(svg){
+  const vb = svg.viewBox && svg.viewBox.baseVal;
+  if (vb && vb.width) return vb.width;
+  const r = svg.getBoundingClientRect();
+  return r.width || 600;
+}
+
+function applyZoom(){
+  const svg = flowRender.querySelector("svg");
+  const label = $("zoom-level");
+  if (!svg){ label.textContent = "FIT"; return; }
+  svg.style.height = "auto";               // keep aspect ratio via viewBox
+  if (flowZoom === null){
+    svg.style.width = "";
+    svg.style.maxWidth = "100%";
+    label.textContent = "FIT";
+  } else {
+    svg.style.maxWidth = "none";
+    svg.style.width = (svgNaturalWidth(svg) * flowZoom) + "px";
+    label.textContent = Math.round(flowZoom * 100) + "%";
+  }
+}
+
+/* Current effective zoom (needed when leaving "Fit" mode) */
+function effectiveZoom(){
+  if (flowZoom !== null) return flowZoom;
+  const svg = flowRender.querySelector("svg");
+  if (!svg) return 1;
+  const shown = svg.getBoundingClientRect().width;
+  const nat   = svgNaturalWidth(svg);
+  return nat ? shown / nat : 1;
+}
+
+function zoomBy(factor){
+  flowZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, effectiveZoom() * factor));
+  applyZoom();
+}
+
+$("btn-zoom-in").addEventListener("click", () => zoomBy(1.25));
+$("btn-zoom-out").addEventListener("click", () => zoomBy(0.8));
+$("btn-zoom-fit").addEventListener("click", () => { flowZoom = null; applyZoom(); });
+$("zoom-level").addEventListener("click", () => { flowZoom = 1; applyZoom(); });
+
+/* Ctrl/Cmd + mouse-wheel over the diagram also zooms */
+flowRender.addEventListener("wheel", e => {
+  if (!(e.ctrlKey || e.metaKey)) return;
+  e.preventDefault();
+  zoomBy(e.deltaY < 0 ? 1.15 : 0.87);
+}, { passive:false });
+
+/* ----------------------- Save flowchart as image --------------------
+   HOW IT WORKS: the rendered SVG (which embeds its own Mermaid styles)
+   is cloned at its natural size, serialised to an SVG blob, loaded into
+   an <img>, and drawn onto a <canvas> at 2× resolution with the navy
+   background painted underneath. canvas.toBlob() then produces the PNG
+   download — all client-side, no server involved. If PNG conversion is
+   blocked by the browser, the raw .svg file is downloaded instead.    */
+function triggerDownload(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function saveFlowImage(){
+  const svg = flowRender.querySelector("svg");
+  if (!svg){ alert("Nothing to save yet — draw a flowchart first."); return; }
+
+  saveActive();
+  const base = files.get(activeId).name.replace(/\.py$/i, "") + "_flowchart";
+
+  /* clone at natural size so zoom level does not affect the export */
+  const natW = svgNaturalWidth(svg);
+  const vb   = svg.viewBox && svg.viewBox.baseVal;
+  const natH = (vb && vb.height) ? vb.height : svg.getBoundingClientRect().height || 400;
+
+  const clone = svg.cloneNode(true);
+  clone.setAttribute("width",  natW);
+  clone.setAttribute("height", natH);
+  clone.style.maxWidth = "";
+  clone.style.width = "";
+  clone.style.height = "";
+
+  const xml     = new XMLSerializer().serializeToString(clone);
+  const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
+  const svgUrl  = URL.createObjectURL(svgBlob);
+
+  const img = new Image();
+  img.onload = () => {
+    try{
+      const scale  = 2;                          // 2× for a crisp export
+      const canvas = document.createElement("canvas");
+      canvas.width  = Math.round(natW * scale);
+      canvas.height = Math.round(natH * scale);
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#0b0f19";                 // paint the navy background
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(svgUrl);
+      canvas.toBlob(blob => {
+        if (blob) triggerDownload(blob, base + ".png");
+        else      triggerDownload(svgBlob, base + ".svg");   // fallback
+      }, "image/png");
+    }catch(err){
+      URL.revokeObjectURL(svgUrl);
+      triggerDownload(svgBlob, base + ".svg");               // fallback
+    }
+  };
+  img.onerror = () => {
+    URL.revokeObjectURL(svgUrl);
+    triggerDownload(svgBlob, base + ".svg");                 // fallback
+  };
+  img.src = svgUrl;
+}
+
+$("btn-save-image").addEventListener("click", saveFlowImage);
+
+/* ====================================================================
+   §3 · PYTHON RUNTIME (Pyodide)
+   --------------------------------------------------------------------
+   HOW EXECUTION + ERROR TRAPPING WORK:
+   • setStdout({batched}) — Pyodide invokes this callback with each line
+     Python writes to sys.stdout (print()) → Console pane only.
+   • setStderr({batched}) — anything written to sys.stderr (warnings)
+     → Error Logs pane only.
+   • runPythonAsync(code) compiles AND executes. A SyntaxError /
+     IndentationError (compile-time) or any uncaught runtime exception
+     throws a JS `PythonError` whose .message holds the full Python
+     traceback. The try/catch routes that traceback strictly to the
+     Error Logs pane — the console only gets a one-line pointer.
+   ==================================================================== */
+let pyodide = null;
+
+async function bootPyodide(){
+  try{
+    pyodide = await loadPyodide({
+      indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/"
+    });
+
+    /* Make input() usable in the browser: opens a native prompt dialog,
+       echoes the entry to the console like a real terminal, raises
+       EOFError if the student presses Cancel. */
+    pyodide.runPython(`
+import builtins, js
+
+def _browser_input(prompt_text=""):
+    result = js.window.prompt(str(prompt_text))
+    if result is None:
+        raise EOFError("input() was cancelled by the user")
+    print(str(prompt_text) + result)
+    return result
+
+builtins.input = _browser_input
+`);
+
+    setStatus("ready", "Python 3.11 ready");
+    runBtn.disabled = false;
+    appendText(consoleOut, "[system] Pyodide runtime loaded. Press Run Code to execute.\n", "sys");
+  }catch(err){
+    setStatus("", "Runtime failed to load");
+    appendText(errorOut, "Failed to load the Pyodide runtime.\nCheck your internet connection and reload the page.\n\n" + err + "\n");
+  }
+}
+
+async function runCode(){
+  if (!verifySignature()) return lockApp();     // re-check on every run
+  if (!pyodide) return;
+  saveActive();                                    // snapshot current file
+  const fname = files.get(activeId).name;
+
+  runBtn.disabled = true;
+  setStatus("running", "Executing " + fname + "…");
+
+  const stamp = new Date().toLocaleTimeString();
+  appendText(consoleOut, `\n━━ run ${fname} @ ${stamp} ━━\n`, "run-sep");
+
+  pyodide.setStdout({ batched: text => appendText(consoleOut, text + "\n") });
+  pyodide.setStderr({ batched: text => appendText(errorOut,  text + "\n") });
+
+  try{
+    await pyodide.runPythonAsync(editor.getValue());
+    appendText(consoleOut, "[system] Execution finished without errors.\n", "sys");
+  }catch(err){
+    removePlaceholder(errorOut);
+    appendText(errorOut, `⛔ ${fname} @ ${stamp}\n`, "err-time");
+    appendText(errorOut, (err.message || String(err)) + "\n\n");
+    appendText(consoleOut, "[system] Execution stopped — see Error Logs (pane 04).\n", "sys");
+  }finally{
+    setStatus("ready", "Python 3.11 ready");
+    runBtn.disabled = false;
+  }
+}
+
+/* ==================== TOOLBAR ACTIONS ================================ */
+function loadTemplateIntoActive(key){
+  const t = TEMPLATES[key];
+  if (!t || !activeId) return;
+  const f = files.get(activeId);
+  if ((editor.getValue().trim() !== "" && editor.getValue() !== NEW_FILE_CODE) &&
+      !confirm(`Replace the contents of "${f.name}" with the "${$("template-select").selectedOptions[0].text}" template?`)) {
+    $("template-select").value = "";
+    return;
+  }
+  editor.setValue(t.code);
+  flowSrc.value = t.flow;
+  lastNodeId = null;
+  saveActive();
+  renderFlow();
+  $("template-select").value = "";
+}
+
+function clearConsole(){
+  clearNode(consoleOut, "Console cleared. Press Run Code to execute your program.");
+}
+function clearErrors(){
+  clearNode(errorOut, "No errors detected. Runtime and syntax errors will be routed here — not to the console.");
+}
+
+/* Reset File = blank out the ACTIVE file (code + flowchart) */
+function resetFile(){
+  const f = files.get(activeId);
+  if (!confirm(`Reset "${f.name}"?\nThis clears its code and flowchart.`)) return;
+  editor.setValue(NEW_FILE_CODE);
+  flowSrc.value = NEW_FILE_FLOW;
+  lastNodeId = null;
+  saveActive();
+  renderFlow();
+}
+
+/* Download the ACTIVE file as .py (pure client-side Blob).
+   Each export is stamped with the verified developer credit. */
+function downloadPy(){
+  if (!verifySignature()) return lockApp();
+  saveActive();
+  const f = files.get(activeId);
+  const stampLine = "# Created in PY//LAB — " + _sigText();
+  const body = f.code.startsWith(stampLine) ? f.code : stampLine + "\n" + f.code;
+  const blob = new Blob([body], { type: "text/x-python" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href = url; a.download = f.name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/* ------------------------- Wire everything -------------------------- */
+$("btn-run").addEventListener("click", runCode);
+$("btn-clear").addEventListener("click", clearConsole);
+$("btn-clear-2").addEventListener("click", clearConsole);
+$("btn-clear-errors").addEventListener("click", clearErrors);
+$("btn-reset").addEventListener("click", resetFile);
+$("btn-download").addEventListener("click", downloadPy);
+$("template-select").addEventListener("change", e => {
+  if (e.target.value) loadTemplateIntoActive(e.target.value);
+});
+
+/* Ctrl/Cmd + Enter runs the active file */
+document.addEventListener("keydown", e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && !runBtn.disabled){
+    e.preventDefault();
+    runCode();
+  }
+});
+
+/* ---------------------------- Boot ---------------------------------- */
+if (!verifySignature()) lockApp();
+
+/* Render the verified credit and guard it against live DOM edits */
+(function mountCredit(){
+  const credit = _sigText();
+  const el = $("app-credit");
+  el.textContent = credit;
+  el.title = credit;
+  console.log("%c" + credit, "color:#22d3ee;font-weight:bold;");
+  new MutationObserver(() => {
+    if (!verifySignature()) return lockApp();
+    if (el.textContent !== credit) el.textContent = credit;   // self-heal
+  }).observe(el, { childList:true, characterData:true, subtree:true });
+})();
+
+createFile("main.py", TEMPLATES.hello.code, TEMPLATES.hello.flow);  // first project
+bootPyodide();
+</script>
+</body>
+</html>
